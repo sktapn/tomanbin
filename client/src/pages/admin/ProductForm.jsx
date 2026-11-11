@@ -3,9 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api, { errorMessage } from '../../api/axios';
 import { useToast } from '../../context/ToastContext';
 import { Alert, Spinner } from '../../components/Feedback';
-import { CATEGORY_LABELS, PLACEHOLDER_IMG, TAG_LABELS } from '../../utils';
+import ImageUploader from '../../components/ImageUploader';
+import { CATEGORY_LABELS, TAG_LABELS } from '../../utils';
 
-const EMPTY = { name: '', description: '', price: '', category: 'buttons', stock: 0, tag: '', active: true, images: [''] };
+const EMPTY = { name: '', description: '', price: '', category: 'buttons', stock: 0, tag: '', active: true, images: [] };
 
 export default function ProductForm() {
   const { id } = useParams();
@@ -21,7 +22,7 @@ export default function ProductForm() {
     if (!editing) return;
     api
       .get(`/products/${id}`)
-      .then(({ data }) => setForm({ ...data, images: data.images.length ? data.images : [''] }))
+      .then(({ data }) => setForm({ ...data, images: data.images || [] }))
       .catch((err) => setError(errorMessage(err)))
       .finally(() => setLoading(false));
   }, [id, editing]);
@@ -29,9 +30,8 @@ export default function ProductForm() {
   const set = (k) => (e) =>
     setForm({ ...form, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
 
-  const setImage = (i, v) => setForm({ ...form, images: form.images.map((x, j) => (j === i ? v : x)) });
-  const addImage = () => form.images.length < 6 && setForm({ ...form, images: [...form.images, ''] });
-  const removeImage = (i) => setForm({ ...form, images: form.images.filter((_, j) => j !== i) });
+  // usa a forma "função" porque os uploads terminam um de cada vez
+  const setImages = (images) => setForm((f) => ({ ...f, images }));
 
   const submit = async (e) => {
     e.preventDefault();
@@ -92,19 +92,10 @@ export default function ProductForm() {
         </select>
       </label>
 
-      <fieldset className="field">
-        <span>Imagens (URLs, até 6)</span>
-        {form.images.map((src, i) => (
-          <div key={i} className="image-row">
-            <img src={src || PLACEHOLDER_IMG} alt="" onError={(e) => (e.currentTarget.src = PLACEHOLDER_IMG)} />
-            <input className="input" placeholder="https://..." value={src} onChange={(e) => setImage(i, e.target.value)} />
-            <button type="button" className="btn btn-icon" onClick={() => removeImage(i)} aria-label="Remover imagem">✕</button>
-          </div>
-        ))}
-        {form.images.length < 6 && (
-          <button type="button" className="btn btn-ghost btn-sm" onClick={addImage}>+ Adicionar imagem</button>
-        )}
-      </fieldset>
+      <div className="field">
+        <span>Fotos do produto</span>
+        <ImageUploader images={form.images} onChange={setImages} />
+      </div>
 
       <label className="check">
         <input type="checkbox" checked={form.active} onChange={set('active')} /> Visível na loja
