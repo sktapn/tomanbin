@@ -94,6 +94,14 @@ const addressSchema = Joi.object({
     .messages({ 'string.pattern.base': 'CEP inválido' }),
 }).label('Endereço de entrega');
 
+// Telefone/WhatsApp: aceita com ou sem máscara e guarda só os números (DDD + número)
+const phone = Joi.string()
+  .trim()
+  .replace(/\D/g, '')
+  .pattern(/^\d{10,11}$/)
+  .label('Telefone/WhatsApp')
+  .messages({ 'string.pattern.base': 'Telefone inválido: informe DDD + número' });
+
 const createOrder = Joi.object({
   items: Joi.array()
     .items(
@@ -107,6 +115,7 @@ const createOrder = Joi.object({
     .required()
     .label('Itens')
     .messages({ 'array.min': 'O carrinho está vazio' }),
+  contactPhone: phone.required(),
   deliveryMethod: Joi.string().valid(...DELIVERY_METHODS).default('entrega').label('Forma de entrega'),
   // Entrega exige endereço; na retirada o endereço é ignorado
   shippingAddress: Joi.when('deliveryMethod', {
@@ -118,6 +127,7 @@ const createOrder = Joi.object({
 
 const updateOrderStatus = Joi.object({
   status: Joi.string().valid(...STATUSES).required().label('Status'),
+  trackingCode: Joi.string().trim().max(40).allow('').label('Código de rastreio'),
 }).messages(msgs);
 
 const payOrder = Joi.object({

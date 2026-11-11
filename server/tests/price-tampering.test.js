@@ -22,6 +22,7 @@ beforeEach(() => {
   created = null;
   jest.spyOn(User, 'findById').mockResolvedValue({ _id: USER_ID, name: 'Cliente', role: 'user' });
   jest.spyOn(Order, 'countDocuments').mockResolvedValue(0);
+  jest.spyOn(User, 'updateOne').mockResolvedValue({});
   // Produto no banco custa R$ 59,90
   jest.spyOn(Product, 'findOneAndUpdate').mockResolvedValue({ _id: PRODUCT_ID, name: 'Mago Chibi', price: 59.9, images: [], stock: 8 });
   jest.spyOn(Order, 'create').mockImplementation(async (data) => (created = { _id: 'o1', ...data }));
@@ -35,6 +36,7 @@ describe('Manipulação de preço pelo navegador', () => {
       total: 1,
       subtotal: 1,
       shippingFee: 0,
+      contactPhone: '(95) 99123-4567',
       deliveryMethod: 'entrega',
       shippingAddress: { zip: '69301-150', street: 'Rua A', number: '10', neighborhood: 'Centro', city: 'Boa Vista', state: 'RR' },
     });
@@ -43,11 +45,12 @@ describe('Manipulação de preço pelo navegador', () => {
     expect(created.subtotal).toBe(119.8); // 2 × 59,90
     expect(created.shippingFee).toBe(15); // frete do servidor
     expect(created.total).toBe(134.8);
+    expect(created.contactPhone).toBe('95991234567'); // só números
   });
 
   it('quantidade negativa ou zero é recusada → 400', async () => {
     for (const quantity of [-5, 0, 1.5]) {
-      const res = await post({ items: [{ product: PRODUCT_ID, quantity }], deliveryMethod: 'retirada' });
+      const res = await post({ items: [{ product: PRODUCT_ID, quantity }], contactPhone: '95991234567', deliveryMethod: 'retirada' });
       expect(res.status).toBe(400);
     }
     expect(Order.create).not.toHaveBeenCalled();
@@ -56,8 +59,15 @@ describe('Manipulação de preço pelo navegador', () => {
   it('não dá para comprar mais do que o estoque', async () => {
     Product.findOneAndUpdate.mockResolvedValue(null); // estoque insuficiente
     jest.spyOn(Product, 'findById').mockResolvedValue({ name: 'Mago Chibi', active: true, stock: 1 });
-    const res = await post({ items: [{ product: PRODUCT_ID, quantity: 5 }], deliveryMethod: 'retirada' });
+    const res = await post({ items: [{ product: PRODUCT_ID, quantity: 5 }], contactPhone: '95991234567', deliveryMethod: 'retirada' });
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/Estoque insuficiente/);
+  });
+
+  it('pedido sem telefone ou com telefone inválido → 400', async () => {
+    for (const contactPhone of [undefined, '123', '(95) 9999']) {
+      const res = await post({ items: [{ product: PRODUCT_ID, quantity: 1 }], contactPhone, deliveryMethod: 'retirada' });
+      expect(res.status).toBe(400);
+    }
   });
 });

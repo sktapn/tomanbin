@@ -25,6 +25,8 @@ const orderSchema = new mongoose.Schema(
     },
     subtotal: { type: Number, min: 0 }, // soma dos produtos
     deliveryMethod: { type: String, enum: DELIVERY_METHODS, default: 'entrega' },
+    contactPhone: String, // telefone/WhatsApp do cliente (só números)
+    trackingCode: String, // código de rastreio (Correios etc.)
     shippingFee: { type: Number, default: 0, min: 0 },
     total: { type: Number, required: true, min: 0 }, // subtotal + frete
     status: { type: String, enum: STATUSES, default: 'pendente' },

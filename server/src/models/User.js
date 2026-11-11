@@ -18,6 +18,7 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true, minlength: 6, select: false },
     role: { type: String, enum: ROLES, default: 'user' },
     cpf: { type: String, trim: true }, // usado na cobrança Pix (Asaas exige CPF)
+    phone: { type: String, trim: true }, // último telefone usado em uma compra (preenche o próximo checkout)
     asaasCustomerId: { type: String },
   },
   { timestamps: true }

@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import { Alert, Empty, Spinner } from '../components/Feedback';
-import { PLACEHOLDER_IMG, formatPrice } from '../utils';
+import { PLACEHOLDER_IMG, formatPrice, maskPhone } from '../utils';
 import { lookupCep, maskCep } from '../services/cep';
 
 export default function Cart() {
@@ -20,12 +20,18 @@ export default function Cart() {
   const [submitting, setSubmitting] = useState(false);
   const numberRef = useRef(null);
   const [delivery, setDelivery] = useState('entrega'); // 'entrega' | 'retirada'
+  const [phone, setPhone] = useState(() => maskPhone(user?.phone || ''));
   const [shipping, setShipping] = useState({ fee: 15, pickupInfo: '' });
 
   // Valor do frete vem do servidor (é ele quem calcula o total de verdade)
   useEffect(() => {
     api.get('/orders/shipping').then(({ data }) => setShipping(data)).catch(() => {});
   }, []);
+
+  // se o login terminar de carregar depois, preenche o telefone salvo
+  useEffect(() => {
+    if (user?.phone) setPhone((p) => p || maskPhone(user.phone));
+  }, [user?.phone]);
 
   const shippingFee = delivery === 'entrega' ? shipping.fee : 0;
   const grandTotal = total + shippingFee;
@@ -63,6 +69,7 @@ export default function Cart() {
     e.preventDefault();
     setError('');
     if (!user) return navigate('/login', { state: { from: '/carrinho' } });
+    if (phone.replace(/\D/g, '').length < 10) return setError('Informe um telefone/WhatsApp com DDD para contato.');
     const required = ['zip', 'street', 'number', 'neighborhood', 'city', 'state'];
     if (delivery === 'entrega' && required.some((k) => !address[k].trim())) {
       return setError('Preencha o endereço completo (o complemento é opcional).');
@@ -72,6 +79,7 @@ export default function Cart() {
     try {
       const { data } = await api.post('/orders', {
         items: items.map((i) => ({ product: i._id, quantity: i.quantity })),
+        contactPhone: phone,
         deliveryMethod: delivery,
         ...(delivery === 'entrega' && { shippingAddress: address }),
       });
@@ -118,6 +126,20 @@ export default function Cart() {
         <Alert onClose={() => setError('')}>{error}</Alert>
         {user ? (
           <>
+            <label className="field">
+              <span>Telefone / WhatsApp</span>
+              <input
+                className="input"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                placeholder="(95) 99123-4567"
+                value={phone}
+                onChange={(e) => setPhone(maskPhone(e.target.value))}
+              />
+              <small className="muted">Usamos só para falar sobre o seu pedido.</small>
+            </label>
+
             <fieldset className="delivery" aria-label="Forma de entrega">
               <label className={`delivery-opt ${delivery === 'entrega' ? 'active' : ''}`}>
                 <input type="radio" name="delivery" value="entrega" checked={delivery === 'entrega'} onChange={() => setDelivery('entrega')} />

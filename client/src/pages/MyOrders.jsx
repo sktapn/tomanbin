@@ -71,6 +71,14 @@ export default function MyOrders() {
                   </li>
                 ))}
               </ul>
+              {o.trackingCode && (
+                <p className="tracking">
+                  📦 Código de rastreio: <strong>{o.trackingCode}</strong>{' '}
+                  <a href={`https://rastreamento.correios.com.br/app/index.php?objetos=${o.trackingCode}`} target="_blank" rel="noreferrer">
+                    Rastrear
+                  </a>
+                </p>
+              )}
               <footer className="order-foot">
                 <span className="muted">
                   {o.deliveryMethod === 'retirada' ? (

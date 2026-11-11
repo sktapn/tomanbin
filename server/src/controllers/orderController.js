@@ -22,7 +22,7 @@ exports.shippingOptions = (_req, res) => res.json(shippingConfig());
 
 // POST /api/orders  (logado) — preço e estoque SEMPRE vêm do banco, nunca do front
 exports.create = asyncHandler(async (req, res) => {
-  const { items, shippingAddress, deliveryMethod } = req.body;
+  const { items, shippingAddress, deliveryMethod, contactPhone } = req.body;
 
   // Evita que alguém "segure" todo o estoque criando vários pedidos sem pagar
   const MAX_PENDING = Number(process.env.MAX_PENDING_ORDERS || 3);
@@ -72,10 +72,14 @@ exports.create = asyncHandler(async (req, res) => {
     items: reserved.map(({ stock, ...it }) => it),
     subtotal,
     deliveryMethod,
+    contactPhone,
     shippingFee,
     total,
     ...(deliveryMethod === 'entrega' && { shippingAddress }),
   });
+
+  // Guarda o telefone no cadastro para já vir preenchido na próxima compra
+  User.updateOne({ _id: req.user._id }, { phone: contactPhone }).catch(() => {});
 
   reserved.forEach((it) => emit(null, 'stock:update', { productId: it.product, stock: it.stock }));
   emit('admins', 'order:new', { id: order._id, total, customer: req.user.name, createdAt: order.createdAt });
@@ -122,12 +126,13 @@ exports.updateStatus = asyncHandler(async (req, res) => {
   if (!order) throw new AppError('Pedido não encontrado', 404);
   if (order.status === 'cancelado') throw new AppError('Pedido cancelado não pode ser alterado', 400);
 
-  const { status } = req.body;
+  const { status, trackingCode } = req.body;
   order.status = status;
+  if (trackingCode !== undefined) order.trackingCode = trackingCode || undefined;
   await order.save();
   if (status === 'cancelado') await restoreStock(order.items);
 
-  emit(`user:${order.user}`, 'order:status', { id: order._id, status });
+  emit(`user:${order.user}`, 'order:status', { id: order._id, status, trackingCode: order.trackingCode });
   await order.populate('user', 'name email');
   res.json(order);
 });
