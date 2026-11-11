@@ -50,7 +50,7 @@ export default function Register() {
     <AuthLayout
       panelTitle="Bem-vindo(a) à turma!"
       panelText="Crie sua conta em menos de um minuto."
-      perks={['Pague com Pix na hora', 'Acompanhe seus pedidos ao vivo', 'Receba em casa ou retire sem frete']}
+      perks={['Pague com Pix na hora', 'Acompanhe seus pedidos ao vivo', 'Entrega em Boa Vista ou retirada grátis']}
     >
       <form className="auth-form" onSubmit={handleSubmit} noValidate>
         <h1>Criar conta</h1>

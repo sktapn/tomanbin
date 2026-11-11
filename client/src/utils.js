@@ -19,10 +19,14 @@ export const CATEGORY_EMOJI = {
 export const STATUS_LABELS = {
   pendente: 'Pendente',
   pago: 'Pago',
-  enviado: 'Enviado',
+  enviado: 'Saiu para entrega',
   entregue: 'Entregue',
   cancelado: 'Cancelado',
 };
+
+/** Rótulo do status considerando a forma de entrega */
+export const statusLabel = (o) =>
+  o.status === 'enviado' && o.deliveryMethod === 'retirada' ? 'Pronto para retirada' : STATUS_LABELS[o.status];
 
 export const PLACEHOLDER_IMG =
   'data:image/svg+xml;utf8,' +

@@ -825,3 +825,4 @@ ol.rank li::before { counter-increment: r; content: counter(r) '.'; font-family:
 .coupon-off { background: #e5dcd6; }
 .row-actions { display: flex; gap: 0.45rem; flex-wrap: wrap; align-items: center; }
 .forgot-link { align-self: flex-end; font-size: 0.82rem; font-weight: 700; color: var(--wine); margin-top: 0.35rem; }
+.quick-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }

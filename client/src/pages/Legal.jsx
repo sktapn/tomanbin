@@ -16,16 +16,16 @@ const PAGES = {
       ['Arrependimento (7 dias)', <>
         Comprou e se arrependeu? Você pode desistir da compra em até <strong>7 dias corridos</strong> depois de receber o pedido,
         sem precisar explicar o motivo (art. 49 do Código de Defesa do Consumidor). Devolvemos <strong>100% do valor pago,
-        incluindo o frete</strong>, pelo mesmo meio de pagamento (Pix).
+        incluindo a taxa de entrega</strong>, pelo mesmo meio de pagamento (Pix).
       </>],
       ['Produto com defeito', <>
         Se o produto chegar com defeito ou diferente do anunciado, você tem até <strong>90 dias</strong> para nos avisar
         (art. 26 do CDC). Nesse caso, a gente troca o item, envia outro igual ou devolve o dinheiro, como você preferir,
-        e o frete da devolução fica por nossa conta.
+        e a busca do produto fica por nossa conta.
       </>],
       ['Como pedir', <>
         Fale com a gente pelo <Contact /> informando o número do pedido (está em <Link to="/meus-pedidos">Meus pedidos</Link>)
-        e, se for defeito, uma foto do produto. Respondemos em até 2 dias úteis com as instruções de envio.
+        e, se for defeito, uma foto do produto. Respondemos em até 2 dias úteis para combinar a troca, que pode ser feita na loja ou com retirada no seu endereço em Boa Vista.
       </>],
       ['Condições', <>
         O produto deve voltar sem sinais de uso e, se possível, na embalagem original. Produtos personalizados
@@ -51,8 +51,8 @@ const PAGES = {
         obrigações legais (como emissão de nota e guarda de registros). Não vendemos nem alugamos seus dados.
       </>],
       ['Com quem compartilhamos', <>
-        Apenas com quem precisa para o pedido acontecer: o Mercado Pago (pagamento), os Correios ou a transportadora
-        (entrega) e o serviço de hospedagem do site. Todos tratam os dados só para essa finalidade.
+        Apenas com quem precisa para o pedido acontecer: o Mercado Pago (pagamento) e quem faz a entrega
+        (só nome, telefone e endereço) e o serviço de hospedagem do site. Todos tratam os dados só para essa finalidade.
       </>],
       ['Cookies e armazenamento', <>
         Usamos o armazenamento do navegador apenas para manter você conectado e guardar seu carrinho. Não usamos
@@ -85,9 +85,9 @@ const PAGES = {
         automaticamente e o estoque é liberado.
       </>],
       ['Pagamento e envio', <>
-        O pagamento é feito por Pix e confirmado automaticamente. Pedidos pagos são enviados em até 3 dias úteis; o
-        código de rastreio aparece em <Link to="/meus-pedidos">Meus pedidos</Link>. Também é possível retirar o pedido
-        sem custo de frete.
+        O pagamento é feito por Pix e confirmado automaticamente. No momento, entregamos apenas em Boa Vista/RR, em até
+        1 dia útil depois da confirmação do pagamento, com taxa fixa informada no carrinho. Também é possível retirar o
+        pedido sem custo no endereço da loja. O andamento aparece em <Link to="/meus-pedidos">Meus pedidos</Link>.
       </>],
       ['Trocas e privacidade', <>
         As regras de troca estão em <Link to="/trocas">Trocas e devoluções</Link> e o uso dos seus dados em{' '}

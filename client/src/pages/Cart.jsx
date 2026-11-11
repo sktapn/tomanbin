@@ -21,7 +21,13 @@ export default function Cart() {
   const numberRef = useRef(null);
   const [delivery, setDelivery] = useState('entrega'); // 'entrega' | 'retirada'
   const [phone, setPhone] = useState(() => maskPhone(user?.phone || ''));
-  const [shipping, setShipping] = useState({ fee: 15, pickupInfo: '' });
+  const [shipping, setShipping] = useState({ fee: 15, deliveryArea: 'Boa Vista/RR', deliveryTime: 'até 1 dia útil', pickupAddress: '', pickupInfo: '', cepRanges: [] });
+
+  // CEP dentro da área de entrega? (o servidor confere de novo ao criar o pedido)
+  const inArea = (zip) => {
+    const n = Number(String(zip).replace(/\D/g, ''));
+    return !shipping.cepRanges?.length || shipping.cepRanges.some(([a, b]) => n >= a && n <= b);
+  };
 
   // Valor do frete vem do servidor (é ele quem calcula o total de verdade)
   useEffect(() => {
@@ -101,6 +107,10 @@ export default function Cart() {
       setCepStatus({ loading: false, error: '', found: false });
       return;
     }
+    if (!inArea(zip)) {
+      setCepStatus({ loading: false, error: `No momento entregamos apenas em ${shipping.deliveryArea}. Escolha "Retirar na loja".`, found: false });
+      return;
+    }
     setCepStatus({ loading: true, error: '', found: false });
     try {
       const found = await lookupCep(zip);
@@ -118,6 +128,9 @@ export default function Cart() {
     if (!user) return navigate('/login', { state: { from: '/carrinho' } });
     if (phone.replace(/\D/g, '').length < 10) return setError('Informe um telefone/WhatsApp com DDD para contato.');
     const required = ['zip', 'street', 'number', 'neighborhood', 'city', 'state'];
+    if (delivery === 'entrega' && !inArea(address.zip)) {
+      return setError(`No momento entregamos apenas em ${shipping.deliveryArea}. Escolha "Retirar na loja".`);
+    }
     if (delivery === 'entrega' && required.some((k) => !address[k].trim())) {
       return setError('Preencha o endereço completo (o complemento é opcional).');
     }
@@ -191,10 +204,10 @@ export default function Cart() {
             <fieldset className="delivery" aria-label="Forma de entrega">
               <label className={`delivery-opt ${delivery === 'entrega' ? 'active' : ''}`}>
                 <input type="radio" name="delivery" value="entrega" checked={delivery === 'entrega'} onChange={() => setDelivery('entrega')} />
-                <span className="delivery-icon">🚚</span>
+                <span className="delivery-icon">🛵</span>
                 <span className="delivery-text">
                   <strong>Receber em casa</strong>
-                  <small>Frete fixo para todo o Brasil</small>
+                  <small>Só em {shipping.deliveryArea} · {shipping.deliveryTime}</small>
                 </span>
                 <strong className="delivery-price">{formatPrice(shipping.fee)}</strong>
               </label>
@@ -202,8 +215,8 @@ export default function Cart() {
                 <input type="radio" name="delivery" value="retirada" checked={delivery === 'retirada'} onChange={() => setDelivery('retirada')} />
                 <span className="delivery-icon">🏪</span>
                 <span className="delivery-text">
-                  <strong>Retirar o produto</strong>
-                  <small>Sem custo de frete</small>
+                  <strong>Retirar na loja</strong>
+                  <small>Sem taxa de entrega</small>
                 </span>
                 <strong className="delivery-price free">Grátis</strong>
               </label>
@@ -211,7 +224,8 @@ export default function Cart() {
 
             {delivery === 'retirada' ? (
               <div className="pickup-info">
-                <strong>📍 Como funciona a retirada</strong>
+                <strong>📍 Retirada na loja</strong>
+                {shipping.pickupAddress && <p><strong>{shipping.pickupAddress}</strong></p>}
                 <p>{shipping.pickupInfo}</p>
               </div>
             ) : (
@@ -281,7 +295,7 @@ export default function Cart() {
         <div className="checkout-lines">
           <div><span>Produtos</span><span>{formatPrice(total)}</span></div>
           <div>
-            <span>Frete</span>
+            <span>Entrega</span>
             <span>{shippingFee ? formatPrice(shippingFee) : 'Grátis (retirada)'}</span>
           </div>
           {discount > 0 && (

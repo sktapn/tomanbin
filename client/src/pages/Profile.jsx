@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { Alert, Spinner } from '../components/Feedback';
 import { PasswordInput, PasswordStrength } from '../components/AuthLayout';
-import { STATUS_LABELS, formatDate, formatPrice } from '../utils';
+import { STATUS_LABELS, statusLabel, formatDate, formatPrice } from '../utils';
 
 const initials = (name = '') =>
   name
@@ -181,7 +181,7 @@ export default function Profile() {
                       <small className="muted">{formatDate(o.createdAt)} · {o.items.reduce((s, i) => s + i.quantity, 0)} item(ns)</small>
                     </div>
                     <div className="recent-right">
-                      <span className={`status status-${o.status}`}>{STATUS_LABELS[o.status]}</span>
+                      <span className={`status status-${o.status}`}>{statusLabel(o)}</span>
                       <strong>{formatPrice(o.total)}</strong>
                       {o.status === 'pendente' && <Link to={`/pagamento/${o._id}`} className="btn btn-primary btn-sm">Pagar</Link>}
                     </div>

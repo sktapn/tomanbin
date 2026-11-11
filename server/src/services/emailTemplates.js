@@ -10,6 +10,7 @@ const brl = (n = 0) => `R$ ${Number(n).toFixed(2).replace('.', ',')}`;
 const shortId = (id) => String(id).slice(-6).toUpperCase();
 
 const WINE = '#7b1d3a';
+const { shippingConfig } = require('../config/shipping');
 
 function layout(title, body) {
   return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta http-equiv="Content-Language" content="pt-BR"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#fffaf6;font-family:Arial,Helvetica,sans-serif;color:#2b1419">
@@ -37,16 +38,18 @@ function itemsTable(order) {
 ${rows}
 <tr><td colspan="2" style="border-top:1px solid #eee;padding-top:6px"></td></tr>
 ${line('Produtos', brl(order.subtotal ?? order.total))}
-${line('Frete', order.shippingFee ? brl(order.shippingFee) : 'Grátis')}
+${line('Entrega', order.shippingFee ? brl(order.shippingFee) : 'Grátis')}
 ${order.discount ? line(`Cupom ${esc(order.couponCode)}`, `− ${brl(order.discount)}`) : ''}
 <tr><td style="padding-top:6px;font-weight:bold">Total</td><td align="right" style="padding-top:6px;font-weight:bold">${brl(order.total)}</td></tr>
 </table>`;
 }
 
 function delivery(order) {
-  if (order.deliveryMethod === 'retirada') return '<p>🏪 <b>Retirada na loja.</b> Avisamos quando estiver pronto.</p>';
+  if (order.deliveryMethod === 'retirada') {
+    return `<p>🏪 <b>Retirada na loja:</b> ${esc(shippingConfig().pickupAddress)}</p>`;
+  }
   const a = order.shippingAddress || {};
-  return `<p>🚚 <b>Entrega em:</b> ${esc(a.street)}, ${esc(a.number)}${a.complement ? ` - ${esc(a.complement)}` : ''}, ${esc(a.neighborhood)}, ${esc(a.city)}/${esc(a.state)} · CEP ${esc(a.zip)}</p>`;
+  return `<p>🛵 <b>Entrega em:</b> ${esc(a.street)}, ${esc(a.number)}${a.complement ? ` - ${esc(a.complement)}` : ''}, ${esc(a.neighborhood)}, ${esc(a.city)}/${esc(a.state)} · CEP ${esc(a.zip)}</p>`;
 }
 
 exports.orderReceived = (order, user) => ({
@@ -66,22 +69,27 @@ exports.orderPaid = (order, user) => ({
   html: layout(
     'Pagamento confirmado! 🎉',
     `<p>Oi, ${esc(user.name.split(' ')[0])}! O Pix do pedido <b>#${shortId(order._id)}</b> foi confirmado.
-${order.deliveryMethod === 'retirada' ? 'Avisamos quando estiver pronto para retirada.' : 'Agora é com a gente: enviamos em até 3 dias úteis e mandamos o código de rastreio por aqui.'}</p>
+${order.deliveryMethod === 'retirada' ? 'Avisamos por aqui assim que estiver pronto para retirada.' : `Agora é com a gente: entregamos em ${shippingConfig().deliveryTime} e avisamos quando sair para entrega.`}</p>
 ${itemsTable(order)}
 ${button(`${siteUrl()}/meus-pedidos`, 'Ver meus pedidos')}`
   ),
 });
 
 exports.orderShipped = (order, user) => {
-  const code = order.trackingCode ? esc(order.trackingCode) : '';
+  const pickup = order.deliveryMethod === 'retirada';
   return {
-    subject: `Seu pedido #${shortId(order._id)} foi enviado 📦`,
+    subject: pickup
+      ? `Seu pedido #${shortId(order._id)} está pronto para retirada 🏪`
+      : `Seu pedido #${shortId(order._id)} saiu para entrega 🛵`,
     html: layout(
-      'Seu pedido está a caminho! 📦',
-      `<p>Oi, ${esc(user.name.split(' ')[0])}! O pedido <b>#${shortId(order._id)}</b> foi enviado.</p>
-${code ? `<p>Código de rastreio: <b style="font-size:18px;letter-spacing:1px">${code}</b></p>
-${button(`https://rastreamento.correios.com.br/app/index.php?objetos=${encodeURIComponent(order.trackingCode)}`, 'Rastrear nos Correios')}` : ''}
-${delivery(order)}`
+      pickup ? 'Seu pedido está pronto! 🏪' : 'Seu pedido saiu para entrega! 🛵',
+      `<p>Oi, ${esc(user.name.split(' ')[0])}! ${
+        pickup
+          ? `O pedido <b>#${shortId(order._id)}</b> já está separado esperando por você. Traga o número do pedido.`
+          : `O pedido <b>#${shortId(order._id)}</b> está a caminho e deve chegar hoje. Fique de olho no WhatsApp.`
+      }</p>
+${delivery(order)}
+${button(`${siteUrl()}/meus-pedidos`, 'Ver meus pedidos')}`
     ),
   };
 };

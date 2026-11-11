@@ -70,4 +70,22 @@ describe('Manipulação de preço pelo navegador', () => {
       expect(res.status).toBe(400);
     }
   });
+
+  it('entrega fora de Boa Vista é recusada antes de reservar estoque', async () => {
+    const res = await post({
+      items: [{ product: PRODUCT_ID, quantity: 1 }],
+      contactPhone: '95991234567',
+      deliveryMethod: 'entrega',
+      shippingAddress: { zip: '01310-100', street: 'Av Paulista', number: '1000', neighborhood: 'Bela Vista', city: 'São Paulo', state: 'SP' },
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/apenas em Boa Vista/);
+    expect(Product.findOneAndUpdate).not.toHaveBeenCalled();
+  });
+
+  it('retirada vale para qualquer cliente, sem endereço', async () => {
+    const res = await post({ items: [{ product: PRODUCT_ID, quantity: 1 }], contactPhone: '95991234567', deliveryMethod: 'retirada' });
+    expect(res.status).toBe(201);
+    expect(created.shippingFee).toBe(0);
+  });
 });

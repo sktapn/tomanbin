@@ -4,7 +4,7 @@ import api, { errorMessage } from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { Alert, Empty, Spinner } from '../components/Feedback';
-import { STATUS_LABELS, formatDate, formatPrice } from '../utils';
+import { STATUS_LABELS, statusLabel, formatDate, formatPrice } from '../utils';
 
 export default function MyOrders() {
   const [orders, setOrders] = useState([]);
@@ -62,7 +62,7 @@ export default function MyOrders() {
                   <strong>Pedido #{o._id.slice(-6).toUpperCase()}</strong>
                   <span className="muted"> · {formatDate(o.createdAt)}</span>
                 </div>
-                <span className={`status status-${o.status}`}>{STATUS_LABELS[o.status]}</span>
+                <span className={`status status-${o.status}`}>{statusLabel(o)}</span>
               </header>
               <ul className="order-items">
                 {o.items.map((it) => (
@@ -71,26 +71,18 @@ export default function MyOrders() {
                   </li>
                 ))}
               </ul>
-              {o.trackingCode && (
-                <p className="tracking">
-                  📦 Código de rastreio: <strong>{o.trackingCode}</strong>{' '}
-                  <a href={`https://rastreamento.correios.com.br/app/index.php?objetos=${o.trackingCode}`} target="_blank" rel="noreferrer">
-                    Rastrear
-                  </a>
-                </p>
-              )}
               <footer className="order-foot">
                 <span className="muted">
                   {o.deliveryMethod === 'retirada' ? (
                     '🏪 Retirada na loja (sem frete)'
                   ) : (
                     <>
-                      🚚 {o.shippingAddress?.street}
+                      🛵 {o.shippingAddress?.street}
                       {o.shippingAddress?.number ? `, ${o.shippingAddress.number}` : ''}
                       {o.shippingAddress?.complement ? ` - ${o.shippingAddress.complement}` : ''}
                       {o.shippingAddress?.neighborhood ? ` - ${o.shippingAddress.neighborhood}` : ''}, {o.shippingAddress?.city}/
                       {o.shippingAddress?.state}
-                      {o.shippingFee ? ` · frete ${formatPrice(o.shippingFee)}` : ''}
+                      {o.shippingFee ? ` · entrega ${formatPrice(o.shippingFee)}` : ''}
                     </>
                   )}
                   {o.discount > 0 && ` · 🏷️ cupom ${o.couponCode} (− ${formatPrice(o.discount)})`}

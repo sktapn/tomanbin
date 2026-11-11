@@ -3,7 +3,7 @@ import api, { errorMessage } from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Alert, Empty, Spinner } from '../../components/Feedback';
-import { STATUS_LABELS, formatDate, formatPrice, maskPhone, whatsappLink } from '../../utils';
+import { STATUS_LABELS, statusLabel, formatDate, formatPrice, maskPhone, whatsappLink } from '../../utils';
 
 const PAYMENT_LABELS = { PENDING: 'Aguardando Pix', PAID: 'Pix pago', EXPIRED: 'Pix expirado', CANCELLED: 'Pix cancelado', REFUNDED: 'Estornado' };
 const PROVIDER_LABELS = { mercadopago: 'Mercado Pago', asaas: 'Asaas', demo: 'Demonstração' };
@@ -17,7 +17,6 @@ function addressLines(a = {}) {
 }
 
 function OrderCard({ o, busy, onStatus, onTracking, onRemove }) {
-  const [tracking, setTracking] = useState(o.trackingCode || '');
   const shortId = o._id.slice(-6).toUpperCase();
   const isPickup = o.deliveryMethod === 'retirada';
   const name = o.user?.name || 'Cliente removido';
@@ -41,8 +40,8 @@ function OrderCard({ o, busy, onStatus, onTracking, onRemove }) {
           <span className="muted"> · {formatDate(o.createdAt)}</span>
         </div>
         <div className="order-badges">
-          <span className={`chip ${isPickup ? 'chip-light' : 'chip-cat'}`}>{isPickup ? '🏪 Retirada' : '🚚 Entrega'}</span>
-          <span className={`status status-${o.status}`}>{STATUS_LABELS[o.status]}</span>
+          <span className={`chip ${isPickup ? 'chip-light' : 'chip-cat'}`}>{isPickup ? '🏪 Retirada' : '🛵 Entrega'}</span>
+          <span className={`status status-${o.status}`}>{statusLabel(o)}</span>
         </div>
       </header>
 
@@ -75,7 +74,7 @@ function OrderCard({ o, busy, onStatus, onTracking, onRemove }) {
         </section>
 
         <section>
-          <h3>{isPickup ? '🏪 Retirada' : '🚚 Endereço de entrega'}</h3>
+          <h3>{isPickup ? '🏪 Retirada' : '🛵 Endereço de entrega'}</h3>
           {isPickup ? (
             <p className="muted">O cliente vai retirar o pedido. Combine pelo WhatsApp.</p>
           ) : (
@@ -112,7 +111,7 @@ function OrderCard({ o, busy, onStatus, onTracking, onRemove }) {
             </tr>
           ))}
           <tr className="sub"><td /><td>Produtos</td><td className="num">{formatPrice(o.subtotal ?? o.total)}</td></tr>
-          <tr className="sub"><td /><td>Frete</td><td className="num">{o.shippingFee ? formatPrice(o.shippingFee) : 'Grátis'}</td></tr>
+          <tr className="sub"><td /><td>Entrega</td><td className="num">{o.shippingFee ? formatPrice(o.shippingFee) : 'Grátis'}</td></tr>
           {o.discount > 0 && (
             <tr className="sub discount-line"><td /><td>Cupom {o.couponCode}</td><td className="num">− {formatPrice(o.discount)}</td></tr>
           )}
@@ -121,24 +120,19 @@ function OrderCard({ o, busy, onStatus, onTracking, onRemove }) {
       </table>
 
       <footer className="order-foot admin-order-foot">
-        {!isPickup && o.status !== 'cancelado' && (
-          <form
-            className="tracking-form"
-            onSubmit={(e) => {
-              e.preventDefault();
-              onTracking.save(o, tracking.trim());
-            }}
-          >
-            <input
-              className="input"
-              placeholder="Código de rastreio (ex: AA123456789BR)"
-              value={tracking}
-              onChange={(e) => setTracking(e.target.value.toUpperCase())}
-              maxLength={40}
-            />
-            <button className="btn btn-ghost btn-sm" disabled={busy || tracking === (o.trackingCode || '')}>Salvar</button>
-          </form>
-        )}
+        {/* Atalhos do dia a dia: um clique muda o status e avisa o cliente por e-mail */}
+        <div className="quick-actions">
+          {o.status === 'pago' && (
+            <button className="btn btn-primary btn-sm" disabled={busy} onClick={() => onStatus(o, 'enviado')}>
+              {isPickup ? '🏪 Pronto para retirada' : '🛵 Saiu para entrega'}
+            </button>
+          )}
+          {o.status === 'enviado' && (
+            <button className="btn btn-primary btn-sm" disabled={busy} onClick={() => onStatus(o, 'entregue')}>
+              ✅ {isPickup ? 'Cliente retirou' : 'Entregue'}
+            </button>
+          )}
+        </div>
         <div className="order-actions">
           {busy && <Spinner small />}
           <select

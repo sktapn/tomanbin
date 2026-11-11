@@ -8,7 +8,7 @@ const asaas = require('../services/asaas');
 const demoPix = require('../services/demoPix');
 const mercadopago = require('../services/mercadopago');
 const { isValidCpf, onlyDigits } = require('../utils/cpf');
-const { shippingConfig } = require('../config/shipping');
+const { shippingConfig, isDeliverable, cepRanges } = require('../config/shipping');
 const coupons = require('../services/coupons');
 const { notifyOrder } = require('../services/notifications');
 
@@ -20,11 +20,17 @@ async function restoreStock(items) {
 }
 
 // GET /api/orders/shipping  (público) — opções de entrega e valor do frete
-exports.shippingOptions = (_req, res) => res.json(shippingConfig());
+exports.shippingOptions = (_req, res) => res.json({ ...shippingConfig(), cepRanges: cepRanges() });
 
 // POST /api/orders  (logado) — preço e estoque SEMPRE vêm do banco, nunca do front
 exports.create = asyncHandler(async (req, res) => {
   const { items, shippingAddress, deliveryMethod, contactPhone, couponCode } = req.body;
+
+  // Entrega local: só dentro da área atendida (antes de reservar estoque)
+  if (deliveryMethod === 'entrega' && !isDeliverable(shippingAddress?.zip)) {
+    const { deliveryArea } = shippingConfig();
+    throw new AppError(`No momento entregamos apenas em ${deliveryArea}. Escolha "Retirar na loja".`, 400);
+  }
 
   // Evita que alguém "segure" todo o estoque criando vários pedidos sem pagar
   const MAX_PENDING = Number(process.env.MAX_PENDING_ORDERS || 3);
@@ -165,7 +171,7 @@ exports.updateStatus = asyncHandler(async (req, res) => {
   }
 
   emit(`user:${order.user}`, 'order:status', { id: order._id, status, trackingCode: order.trackingCode });
-  // E-mail de "pedido enviado" (ou de código de rastreio novo)
+  // E-mail de "saiu para entrega" / "pronto para retirada"
   if (status === 'enviado' && (!wasShipped || order.trackingCode !== oldTracking)) notifyOrder('shipped', order);
   await order.populate('user', 'name email');
   res.json(order);

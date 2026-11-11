@@ -165,7 +165,7 @@ export default function ProductDetail() {
           )}
 
           <ul className="perks">
-            <li><span>🚚</span><div><strong>Entrega por {formatPrice(shippingFee)}</strong><small>ou retire sem pagar frete</small></div></li>
+            <li><span>🛵</span><div><strong>Entrega em Boa Vista por {formatPrice(shippingFee)}</strong><small>em até 1 dia útil, ou retire grátis na loja</small></div></li>
             <li><span>💸</span><div><strong>Pagamento via Pix</strong><small>confirmação na hora</small></div></li>
             <li><span>🔒</span><div><strong>Compra segura</strong><small>seus dados protegidos</small></div></li>
           </ul>

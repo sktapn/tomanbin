@@ -107,9 +107,10 @@ describe('Modelos de e-mail', () => {
     expect(html).toContain('BEMVINDO10');
   });
 
-  it('e-mail de envio traz o código de rastreio', () => {
-    const { subject, html } = tpl.orderShipped(order, user);
-    expect(subject).toContain('ABCDE');
-    expect(html).toContain('AA123456789BR');
+  it('e-mail de saída para entrega e de retirada', () => {
+    expect(tpl.orderShipped(order, user).subject).toMatch(/ABCDE saiu para entrega/);
+    const pickup = tpl.orderShipped({ ...order, deliveryMethod: 'retirada' }, user);
+    expect(pickup.subject).toMatch(/pronto para retirada/);
+    expect(pickup.html).not.toMatch(/Correios/);
   });
 });
