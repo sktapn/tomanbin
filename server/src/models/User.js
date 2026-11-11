@@ -20,6 +20,10 @@ const userSchema = new mongoose.Schema(
     cpf: { type: String, trim: true }, // usado na cobrança Pix (Asaas exige CPF)
     phone: { type: String, trim: true }, // último telefone usado em uma compra (preenche o próximo checkout)
     asaasCustomerId: { type: String },
+    // "Esqueci minha senha": guardamos só o hash do token, nunca o token em si
+    resetTokenHash: { type: String, select: false },
+    resetTokenExpires: { type: Date, select: false },
+    passwordChangedAt: Date, // tokens de login emitidos antes disso deixam de valer
   },
   { timestamps: true }
 );
@@ -40,6 +44,9 @@ userSchema.set('toJSON', {
   transform: (_doc, ret) => {
     delete ret.password;
     delete ret.asaasCustomerId;
+    delete ret.resetTokenHash;
+    delete ret.resetTokenExpires;
+    delete ret.passwordChangedAt;
     delete ret.__v;
     return ret;
   },

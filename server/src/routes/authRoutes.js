@@ -7,6 +7,8 @@ const { authLimiter } = require('../middlewares/rateLimit');
 
 router.post('/register', authLimiter, validate(schemas.register), ctrl.register);
 router.post('/login', authLimiter, validate(schemas.login), ctrl.login);
+router.post('/forgot-password', authLimiter, validate(schemas.forgotPassword), ctrl.forgotPassword);
+router.post('/reset-password', authLimiter, validate(schemas.resetPassword), ctrl.resetPassword);
 router.get('/me', protect, ctrl.me);
 
 module.exports = router;

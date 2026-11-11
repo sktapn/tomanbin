@@ -21,6 +21,10 @@ async function protect(req, _res, next) {
 
     const user = await User.findById(payload.id);
     if (!user) throw new AppError('Usuário não encontrado', 401);
+    // Senha redefinida depois do login? Esse token não vale mais
+    if (user.passwordChangedAt && payload.iat * 1000 < user.passwordChangedAt.getTime() - 1000) {
+      throw new AppError('Sua senha foi alterada. Entre novamente.', 401);
+    }
 
     req.user = user;
     next();

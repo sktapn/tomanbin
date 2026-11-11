@@ -13,6 +13,8 @@ import NotFound from './pages/NotFound';
 import About from './pages/About';
 import Faq from './pages/Faq';
 import Legal from './pages/Legal';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Payment from './pages/Payment';
 import AdminLayout from './pages/admin/AdminLayout';
 import Dashboard from './pages/admin/Dashboard';
@@ -33,6 +35,8 @@ export default function App() {
         <Route path="carrinho" element={<Cart />} />
         <Route path="login" element={<Login />} />
         <Route path="cadastro" element={<Register />} />
+        <Route path="esqueci-senha" element={<ForgotPassword />} />
+        <Route path="redefinir-senha" element={<ResetPassword />} />
         <Route path="sobre" element={<About />} />
         <Route path="faq" element={<Faq />} />
         <Route path="trocas" element={<Legal page="trocas" key="trocas" />} />

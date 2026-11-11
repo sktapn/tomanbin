@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { errorMessage } from '../api/axios';
 import { Alert, Spinner } from '../components/Feedback';
@@ -60,6 +60,7 @@ export default function Login() {
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
           />
+          <Link to="/esqueci-senha" className="forgot-link">Esqueci minha senha</Link>
         </div>
 
         <button className="btn btn-primary btn-block btn-lg" disabled={submitting}>

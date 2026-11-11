@@ -63,6 +63,7 @@ export function AuthProvider({ children }) {
   };
 
   const value = {
+    saveSession,
     user,
     setUser,
     socket,

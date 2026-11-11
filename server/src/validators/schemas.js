@@ -30,6 +30,20 @@ const login = Joi.object({
   password: Joi.string().required().label('Senha'),
 }).messages(msgs);
 
+const forgotPassword = Joi.object({
+  email: Joi.string().trim().lowercase().email().required().label('E-mail'),
+}).messages(msgs);
+
+const resetPassword = Joi.object({
+  token: Joi.string().hex().length(64).required().messages({
+    'string.hex': 'Link inválido ou expirado. Peça um novo.',
+    'string.length': 'Link inválido ou expirado. Peça um novo.',
+    'string.empty': 'Link inválido ou expirado. Peça um novo.',
+    'any.required': 'Link inválido ou expirado. Peça um novo.',
+  }),
+  password: Joi.string().min(6).max(100).required().label('Nova senha'),
+}).messages(msgs);
+
 // ---------- Users ----------
 const updateMe = Joi.object({
   name: Joi.string().trim().min(2).max(80).label('Nome'),
@@ -199,6 +213,8 @@ module.exports = {
   updateProduct,
   listProducts,
   createOrder,
+  forgotPassword,
+  resetPassword,
   coupon,
   couponUpdate,
   validateCoupon,

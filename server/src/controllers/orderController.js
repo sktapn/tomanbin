@@ -10,6 +10,7 @@ const mercadopago = require('../services/mercadopago');
 const { isValidCpf, onlyDigits } = require('../utils/cpf');
 const { shippingConfig } = require('../config/shipping');
 const coupons = require('../services/coupons');
+const { notifyOrder } = require('../services/notifications');
 
 async function restoreStock(items) {
   for (const it of items) {
@@ -107,6 +108,7 @@ exports.create = asyncHandler(async (req, res) => {
 
   reserved.forEach((it) => emit(null, 'stock:update', { productId: it.product, stock: it.stock }));
   emit('admins', 'order:new', { id: order._id, total, customer: req.user.name, createdAt: order.createdAt });
+  notifyOrder('received', order);
 
   res.status(201).json(order);
 });
@@ -152,6 +154,8 @@ exports.updateStatus = asyncHandler(async (req, res) => {
   if (order.status === 'cancelado') throw new AppError('Pedido cancelado não pode ser alterado', 400);
 
   const { status, trackingCode } = req.body;
+  const wasShipped = order.status === 'enviado';
+  const oldTracking = order.trackingCode;
   order.status = status;
   if (trackingCode !== undefined) order.trackingCode = trackingCode || undefined;
   await order.save();
@@ -161,6 +165,8 @@ exports.updateStatus = asyncHandler(async (req, res) => {
   }
 
   emit(`user:${order.user}`, 'order:status', { id: order._id, status, trackingCode: order.trackingCode });
+  // E-mail de "pedido enviado" (ou de código de rastreio novo)
+  if (status === 'enviado' && (!wasShipped || order.trackingCode !== oldTracking)) notifyOrder('shipped', order);
   await order.populate('user', 'name email');
   res.json(order);
 });
@@ -276,6 +282,7 @@ async function applyPixStatus(order, status) {
     await order.save();
     emit(`user:${order.user}`, 'order:status', { id: order._id, status: 'pago' });
     emit('admins', 'order:paid', { id: order._id, total: order.total });
+    notifyOrder('paid', order);
     return;
   }
   if (status === 'PAID' && order.status === 'cancelado' && !order.payment.paidAfterCancel) {
