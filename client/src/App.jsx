@@ -12,6 +12,7 @@ import Profile from './pages/Profile';
 import NotFound from './pages/NotFound';
 import About from './pages/About';
 import Faq from './pages/Faq';
+import Legal from './pages/Legal';
 import Payment from './pages/Payment';
 import AdminLayout from './pages/admin/AdminLayout';
 import Dashboard from './pages/admin/Dashboard';
@@ -19,6 +20,7 @@ import AdminProducts from './pages/admin/AdminProducts';
 import ProductForm from './pages/admin/ProductForm';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminUsers from './pages/admin/AdminUsers';
+import AdminCoupons from './pages/admin/AdminCoupons';
 
 export default function App() {
   return (
@@ -33,6 +35,9 @@ export default function App() {
         <Route path="cadastro" element={<Register />} />
         <Route path="sobre" element={<About />} />
         <Route path="faq" element={<Faq />} />
+        <Route path="trocas" element={<Legal page="trocas" key="trocas" />} />
+        <Route path="privacidade" element={<Legal page="privacidade" key="privacidade" />} />
+        <Route path="termos" element={<Legal page="termos" key="termos" />} />
 
         {/* Usuário logado */}
         <Route element={<ProtectedRoute />}>
@@ -50,6 +55,7 @@ export default function App() {
             <Route path="produtos/:id/editar" element={<ProductForm />} />
             <Route path="pedidos" element={<AdminOrders />} />
             <Route path="usuarios" element={<AdminUsers />} />
+            <Route path="cupons" element={<AdminCoupons />} />
           </Route>
         </Route>
 

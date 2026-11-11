@@ -113,6 +113,9 @@ function OrderCard({ o, busy, onStatus, onTracking, onRemove }) {
           ))}
           <tr className="sub"><td /><td>Produtos</td><td className="num">{formatPrice(o.subtotal ?? o.total)}</td></tr>
           <tr className="sub"><td /><td>Frete</td><td className="num">{o.shippingFee ? formatPrice(o.shippingFee) : 'Grátis'}</td></tr>
+          {o.discount > 0 && (
+            <tr className="sub discount-line"><td /><td>Cupom {o.couponCode}</td><td className="num">− {formatPrice(o.discount)}</td></tr>
+          )}
           <tr className="total"><td /><td>Total</td><td className="num">{formatPrice(o.total)}</td></tr>
         </tbody>
       </table>

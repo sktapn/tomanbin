@@ -93,6 +93,7 @@ export default function MyOrders() {
                       {o.shippingFee ? ` · frete ${formatPrice(o.shippingFee)}` : ''}
                     </>
                   )}
+                  {o.discount > 0 && ` · 🏷️ cupom ${o.couponCode} (− ${formatPrice(o.discount)})`}
                 </span>
                 <div className="order-actions">
                   <strong>{formatPrice(o.total)}</strong>

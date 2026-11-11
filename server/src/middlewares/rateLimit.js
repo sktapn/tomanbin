@@ -24,4 +24,14 @@ const apiLimiter = rateLimit({
   handler,
 });
 
-module.exports = { authLimiter, apiLimiter };
+/** Cupons: 20 tentativas a cada 10 min por IP (evita adivinhar códigos) */
+const couponLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: Number(process.env.COUPON_RATE_LIMIT || 20),
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: 'Muitas tentativas de cupom. Aguarde alguns minutos.',
+  handler,
+});
+
+module.exports = { authLimiter, apiLimiter, couponLimiter };

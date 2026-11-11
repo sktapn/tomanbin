@@ -9,14 +9,20 @@ import { CATEGORY_LABELS } from '../utils';
 import { PROMO_MESSAGE } from '../config';
 
 
-function Marquee({ text }) {
-  // Repete o texto várias vezes; a lista é duplicada para o loop não ter "pulo"
-  const items = Array.from({ length: 10 }, () => text);
+function Marquee({ text, code }) {
+  // Velocidade constante (~60px/s), não importa o tamanho do texto
+  const COPIES = 4;
+  const duration = Math.max(20, text.length * COPIES * 0.35);
+  // Destaca o código do cupom dentro da mensagem
+  const parts = code ? text.split(new RegExp(`(${code})`, 'i')) : [text];
+  const render = () =>
+    parts.map((p, i) => (code && p.toUpperCase() === code ? <mark key={i} className="marquee-code">{p}</mark> : p));
+  const items = Array.from({ length: COPIES }, (_, i) => i);
   return (
     <div className="marquee" role="marquee" aria-label={text}>
-      <div className="marquee-track" aria-hidden="true">
-        {[...items, ...items].map((t, i) => (
-          <span key={i}>{t} <b>✦</b></span>
+      <div className="marquee-track" aria-hidden="true" style={{ animationDuration: `${duration}s` }}>
+        {[...items, ...items].map((i, k) => (
+          <span key={k}>{render()} <b>✦</b></span>
         ))}
       </div>
     </div>
@@ -24,6 +30,12 @@ function Marquee({ text }) {
 }
 
 export default function Shop() {
+  // Faixa: cupom em destaque (Admin → Cupons) ou a mensagem fixa do config.js
+  const [promo, setPromo] = useState(PROMO_MESSAGE ? { message: PROMO_MESSAGE } : null);
+  useEffect(() => {
+    api.get('/coupons/banner').then(({ data }) => { if (data) setPromo(data); }).catch(() => {});
+  }, []);
+
   const [params, setParams] = useSearchParams();
   const category = params.get('categoria') || '';
   const sort = params.get('ordem') || 'recent';
@@ -95,7 +107,7 @@ export default function Shop() {
             <h1>{title}</h1>
           </div>
 
-          {PROMO_MESSAGE && <Marquee text={PROMO_MESSAGE} />}
+          {promo?.message && <Marquee text={promo.message} code={promo.code} />}
 
           <div className="shop-tools">
             <input

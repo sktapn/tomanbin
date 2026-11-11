@@ -9,6 +9,7 @@ const demoPix = require('../services/demoPix');
 const mercadopago = require('../services/mercadopago');
 const { isValidCpf, onlyDigits } = require('../utils/cpf');
 const { shippingConfig } = require('../config/shipping');
+const coupons = require('../services/coupons');
 
 async function restoreStock(items) {
   for (const it of items) {
@@ -22,7 +23,7 @@ exports.shippingOptions = (_req, res) => res.json(shippingConfig());
 
 // POST /api/orders  (logado) — preço e estoque SEMPRE vêm do banco, nunca do front
 exports.create = asyncHandler(async (req, res) => {
-  const { items, shippingAddress, deliveryMethod, contactPhone } = req.body;
+  const { items, shippingAddress, deliveryMethod, contactPhone, couponCode } = req.body;
 
   // Evita que alguém "segure" todo o estoque criando vários pedidos sem pagar
   const MAX_PENDING = Number(process.env.MAX_PENDING_ORDERS || 3);
@@ -66,8 +67,31 @@ exports.create = asyncHandler(async (req, res) => {
   const round = (n) => Math.round(n * 100) / 100;
   const subtotal = round(reserved.reduce((s, it) => s + it.price * it.quantity, 0));
   const shippingFee = deliveryMethod === 'entrega' ? shippingConfig().fee : 0; // frete definido no servidor
-  const total = round(subtotal + shippingFee);
+
+  // Cupom: validado e calculado aqui no servidor; o uso é contado de forma atômica
+  let coupon = null;
+  let discount = 0;
+  if (couponCode) {
+    try {
+      ({ coupon, discount } = await coupons.checkCoupon(couponCode, {
+        userId: req.user._id,
+        subtotal,
+        shippingFee,
+        deliveryMethod,
+      }));
+      if (round(subtotal + shippingFee - discount) < 1) {
+        throw new AppError('O valor mínimo do pedido é R$ 1,00', 400);
+      }
+      await coupons.reserveUse(coupon);
+    } catch (err) {
+      await restoreStock(reserved);
+      throw err;
+    }
+  }
+
+  const total = round(subtotal + shippingFee - discount);
   const order = await Order.create({
+    ...(coupon && { couponCode: coupon.code, discount }),
     user: req.user._id,
     items: reserved.map(({ stock, ...it }) => it),
     subtotal,
@@ -110,6 +134,7 @@ exports.cancel = asyncHandler(async (req, res) => {
   order.status = 'cancelado';
   await order.save();
   await restoreStock(order.items);
+  await coupons.releaseUse(order);
   res.json(order);
 });
 
@@ -130,7 +155,10 @@ exports.updateStatus = asyncHandler(async (req, res) => {
   order.status = status;
   if (trackingCode !== undefined) order.trackingCode = trackingCode || undefined;
   await order.save();
-  if (status === 'cancelado') await restoreStock(order.items);
+  if (status === 'cancelado') {
+    await restoreStock(order.items);
+    await coupons.releaseUse(order);
+  }
 
   emit(`user:${order.user}`, 'order:status', { id: order._id, status, trackingCode: order.trackingCode });
   await order.populate('user', 'name email');
@@ -141,7 +169,10 @@ exports.updateStatus = asyncHandler(async (req, res) => {
 exports.remove = asyncHandler(async (req, res) => {
   const order = await Order.findByIdAndDelete(req.params.id);
   if (!order) throw new AppError('Pedido não encontrado', 404);
-  if (order.status === 'pendente') await restoreStock(order.items);
+  if (order.status === 'pendente') {
+    await restoreStock(order.items);
+    await coupons.releaseUse(order);
+  }
   res.status(204).end();
 });
 
@@ -419,6 +450,7 @@ exports.expireStalePendingOrders = async () => {
     if (res.modifiedCount) {
       canceled++;
       await restoreStock(order.items);
+      await coupons.releaseUse(order);
       emit(`user:${order.user}`, 'order:status', { id: order._id, status: 'cancelado' });
     }
   }

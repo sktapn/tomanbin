@@ -33,8 +33,55 @@ export default function Cart() {
     if (user?.phone) setPhone((p) => p || maskPhone(user.phone));
   }, [user?.phone]);
 
+  // ---------- Cupom de desconto (o valor é sempre calculado pelo servidor) ----------
+  const [couponInput, setCouponInput] = useState('');
+  const [coupon, setCoupon] = useState(null); // { code, type, discount }
+  const [couponMsg, setCouponMsg] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
+  const cartKey = items.map((i) => `${i._id}:${i.quantity}`).join(',');
+
+  const checkCoupon = async (code) => {
+    const { data } = await api.post('/coupons/validate', {
+      code,
+      items: items.map((i) => ({ product: i._id, quantity: i.quantity })),
+      deliveryMethod: delivery,
+    });
+    return data;
+  };
+
+  const applyCoupon = async () => {
+    const code = couponInput.trim();
+    if (!code) return;
+    setCouponLoading(true);
+    setCouponMsg('');
+    try {
+      setCoupon(await checkCoupon(code));
+      setCouponInput('');
+    } catch (err) {
+      setCouponMsg(errorMessage(err));
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  // Mudou o carrinho ou a entrega: recalcula (ex: compra mínima, frete grátis só na entrega)
+  useEffect(() => {
+    if (!coupon || items.length === 0) return;
+    let alive = true;
+    checkCoupon(coupon.code)
+      .then((data) => { if (alive) setCoupon(data); })
+      .catch((err) => {
+        if (!alive) return;
+        setCoupon(null);
+        setCouponMsg(`Cupom ${coupon.code} removido: ${errorMessage(err)}`);
+      });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartKey, delivery]);
+
   const shippingFee = delivery === 'entrega' ? shipping.fee : 0;
-  const grandTotal = total + shippingFee;
+  const discount = coupon?.discount || 0;
+  const grandTotal = Math.max(total + shippingFee - discount, 0);
 
   if (items.length === 0) {
     return (
@@ -81,6 +128,7 @@ export default function Cart() {
         items: items.map((i) => ({ product: i._id, quantity: i.quantity })),
         contactPhone: phone,
         deliveryMethod: delivery,
+        ...(coupon && { couponCode: coupon.code }),
         ...(delivery === 'entrega' && { shippingAddress: address }),
       });
       clear();
@@ -204,12 +252,44 @@ export default function Cart() {
         ) : (
           <p className="muted">Faça login para concluir o pedido.</p>
         )}
+        <div className="coupon-box">
+          {coupon ? (
+            <div className="coupon-applied">
+              <span>🏷️ Cupom <strong>{coupon.code}</strong> aplicado</span>
+              <button type="button" className="link-btn" onClick={() => { setCoupon(null); setCouponMsg(''); }}>
+                remover
+              </button>
+            </div>
+          ) : (
+            <div className="coupon-row">
+              <input
+                className="input"
+                placeholder="Cupom de desconto"
+                value={couponInput}
+                maxLength={20}
+                onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyCoupon(); } }}
+                aria-label="Cupom de desconto"
+              />
+              <button type="button" className="btn btn-sm" onClick={applyCoupon} disabled={couponLoading || !couponInput.trim()}>
+                {couponLoading ? <Spinner small /> : 'Aplicar'}
+              </button>
+            </div>
+          )}
+          {couponMsg && <p className="field-error">{couponMsg}</p>}
+        </div>
         <div className="checkout-lines">
           <div><span>Produtos</span><span>{formatPrice(total)}</span></div>
           <div>
             <span>Frete</span>
             <span>{shippingFee ? formatPrice(shippingFee) : 'Grátis (retirada)'}</span>
           </div>
+          {discount > 0 && (
+            <div className="discount-line">
+              <span>Desconto ({coupon.code})</span>
+              <span>− {formatPrice(discount)}</span>
+            </div>
+          )}
         </div>
         <div className="checkout-total">
           <span>Total</span>
@@ -218,6 +298,10 @@ export default function Cart() {
         <button className="btn btn-primary btn-block" disabled={submitting}>
           {submitting ? <Spinner small /> : user ? 'Ir para o pagamento (Pix)' : 'Entrar para finalizar'}
         </button>
+        <p className="checkout-terms">
+          Ao continuar, você concorda com os <Link to="/termos">Termos de uso</Link> e
+          a política de <Link to="/trocas">Trocas e devoluções</Link>.
+        </p>
       </form>
     </div>
   );

@@ -28,7 +28,9 @@ const orderSchema = new mongoose.Schema(
     contactPhone: String, // telefone/WhatsApp do cliente (só números)
     trackingCode: String, // código de rastreio (Correios etc.)
     shippingFee: { type: Number, default: 0, min: 0 },
-    total: { type: Number, required: true, min: 0 }, // subtotal + frete
+    couponCode: String, // cupom usado (se houver)
+    discount: { type: Number, default: 0, min: 0 }, // desconto do cupom (produtos ou frete)
+    total: { type: Number, required: true, min: 0 }, // subtotal + frete - desconto
     status: { type: String, enum: STATUSES, default: 'pendente' },
     // Pagamento via Pix (Asaas)
     payment: {

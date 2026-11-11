@@ -3,6 +3,7 @@ const { CATEGORIES, TAGS } = require('../models/Product');
 const { STATUSES } = require('../models/Order');
 const { ROLES } = require('../models/User');
 const { DELIVERY_METHODS } = require('../config/shipping');
+const { COUPON_TYPES } = require('../models/Coupon');
 
 const objectId = Joi.string().hex().length(24).messages({
   'string.hex': 'ID inválido',
@@ -102,6 +103,59 @@ const phone = Joi.string()
   .label('Telefone/WhatsApp')
   .messages({ 'string.pattern.base': 'Telefone inválido: informe DDD + número' });
 
+// ---------- Cupons ----------
+const couponCode = Joi.string().trim().uppercase().pattern(/^[A-Z0-9_-]{3,20}$/).label('Cupom').messages({
+  'string.pattern.base': 'O código do cupom deve ter de 3 a 20 letras, números, - ou _',
+});
+
+const couponFields = {
+  code: couponCode,
+  type: Joi.string().valid(...COUPON_TYPES).label('Tipo'),
+  value: Joi.when('type', {
+    switch: [
+      { is: 'percentual', then: Joi.number().min(1).max(100).required() },
+      { is: 'valor', then: Joi.number().min(0.01).max(100000).required() },
+    ],
+    otherwise: Joi.any().strip(),
+  }).label('Valor do desconto'),
+  minSubtotal: Joi.number().min(0).max(100000).default(0).label('Compra mínima'),
+  maxUses: Joi.number().integer().min(0).max(1000000).default(0).label('Limite de usos'),
+  onePerCustomer: Joi.boolean().default(false),
+  expiresAt: Joi.date().allow(null, '').empty('').label('Validade'),
+  active: Joi.boolean().default(true),
+  showInBanner: Joi.boolean().default(false),
+  bannerText: Joi.string().trim().max(120).allow('').label('Mensagem da faixa'),
+};
+
+const coupon = Joi.object({
+  ...couponFields,
+  code: couponCode.required(),
+  type: couponFields.type.required(),
+}).messages(msgs);
+
+// Na edição, tipo e valor vão juntos (o valor depende do tipo)
+const couponUpdate = Joi.object({
+  ...couponFields,
+  minSubtotal: Joi.number().min(0).max(100000),
+  maxUses: Joi.number().integer().min(0).max(1000000),
+  onePerCustomer: Joi.boolean(),
+  active: Joi.boolean(),
+  showInBanner: Joi.boolean(),
+})
+  .with('value', 'type')
+  .min(1)
+  .messages(msgs);
+
+const validateCoupon = Joi.object({
+  code: couponCode.required(),
+  items: Joi.array()
+    .items(Joi.object({ product: objectId.required(), quantity: Joi.number().integer().min(1).max(99).required() }))
+    .min(1)
+    .max(50)
+    .required(),
+  deliveryMethod: Joi.string().valid(...DELIVERY_METHODS).default('entrega'),
+}).messages(msgs);
+
 const createOrder = Joi.object({
   items: Joi.array()
     .items(
@@ -116,6 +170,7 @@ const createOrder = Joi.object({
     .label('Itens')
     .messages({ 'array.min': 'O carrinho está vazio' }),
   contactPhone: phone.required(),
+  couponCode: couponCode.allow(''),
   deliveryMethod: Joi.string().valid(...DELIVERY_METHODS).default('entrega').label('Forma de entrega'),
   // Entrega exige endereço; na retirada o endereço é ignorado
   shippingAddress: Joi.when('deliveryMethod', {
@@ -144,5 +199,8 @@ module.exports = {
   updateProduct,
   listProducts,
   createOrder,
+  coupon,
+  couponUpdate,
+  validateCoupon,
   updateOrderStatus,
 };
