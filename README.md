@@ -1,6 +1,6 @@
-# 🧸 Tomanbin — E-commerce de Buttons, Chaveiros e Action Figures
+# Tomanbin — E-commerce de Buttons, Chaveiros e Action Figures
 
-Projeto Final de Arquitetura Web: loja virtual Full Stack com **Node.js + Express + MongoDB** no backend (`/server`) e **React (Vite)** no frontend (`/client`). Pagamento por **Pix** (Mercado Pago).
+Projeto Final de Arquitetura Web: loja virtual Full Stack com **Node.js + Express + MongoDB** no backend (`/server`) e **React (Vite)** no frontend (`/client`).
 
 ## Pré-requisitos
 - Node.js 18+
