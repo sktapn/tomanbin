@@ -34,7 +34,7 @@ const products = [
   try {
     await connectDB();
 
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@quelita.com';
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@tomanbin.com';
     let admin = await User.findOne({ email: adminEmail });
     if (!admin) {
       admin = await User.create({
@@ -44,8 +44,8 @@ const products = [
         role: 'admin',
       });
     }
-    if (!(await User.findOne({ email: 'cliente@quelita.com' }))) {
-      await User.create({ name: 'Cliente Teste', email: 'cliente@quelita.com', password: 'cliente123' });
+    if (!(await User.findOne({ email: 'cliente@tomanbin.com' }))) {
+      await User.create({ name: 'Cliente Teste', email: 'cliente@tomanbin.com', password: 'cliente123' });
     }
 
     await Order.deleteMany({});
@@ -54,7 +54,7 @@ const products = [
 
     console.log(`🌱 Seed concluído: ${products.length} produtos`);
     console.log(`   Admin:   ${adminEmail} / ${process.env.ADMIN_PASSWORD || 'admin123'}`);
-    console.log('   Cliente: cliente@quelita.com / cliente123');
+    console.log('   Cliente: cliente@tomanbin.com / cliente123');
   } catch (err) {
     console.error('Erro no seed:', err);
     process.exitCode = 1;

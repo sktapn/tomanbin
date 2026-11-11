@@ -3,7 +3,7 @@ import api from '../api/axios';
 import { connectSocket } from '../services/socket';
 
 const AuthContext = createContext(null);
-const TOKEN_KEY = 'quelita:token';
+const TOKEN_KEY = 'tomanbin:token';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -38,8 +38,8 @@ export function AuthProvider({ children }) {
 
   // Token expirado em qualquer requisição -> desloga
   useEffect(() => {
-    window.addEventListener('quelita:unauthorized', logout);
-    return () => window.removeEventListener('quelita:unauthorized', logout);
+    window.addEventListener('tomanbin:unauthorized', logout);
+    return () => window.removeEventListener('tomanbin:unauthorized', logout);
   }, [logout]);
 
   // Socket reconecta sempre que muda o login

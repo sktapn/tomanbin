@@ -29,7 +29,7 @@ const api = axios.create({ baseURL: `${API_URL}/api`, timeout: 15000 });
 
 // Envia o token JWT em toda requisição
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('quelita:token');
+  const token = localStorage.getItem('tomanbin:token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -44,8 +44,8 @@ api.interceptors.response.use(
     return res;
   },
   (err) => {
-    if (err.response?.status === 401 && localStorage.getItem('quelita:token')) {
-      window.dispatchEvent(new Event('quelita:unauthorized'));
+    if (err.response?.status === 401 && localStorage.getItem('tomanbin:token')) {
+      window.dispatchEvent(new Event('tomanbin:unauthorized'));
     }
     return Promise.reject(err);
   }

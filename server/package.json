@@ -1,7 +1,7 @@
 {
-  "name": "quelita-server",
+  "name": "tomanbin-server",
   "version": "1.0.0",
-  "description": "API REST do E-commerce Quelita (Buttons, Chaveiros e Action Figures)",
+  "description": "API REST do E-commerce Tomanbin (Buttons, Chaveiros e Action Figures)",
   "main": "src/server.js",
   "type": "commonjs",
   "scripts": {
