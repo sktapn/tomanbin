@@ -242,8 +242,35 @@ async function applyPixStatus(order, status) {
     emit('admins', 'order:paid', { id: order._id, total: order.total });
     return;
   }
+  if (status === 'PAID' && order.status === 'cancelado' && !order.payment.paidAfterCancel) {
+    // Pagou depois que o pedido já tinha sido cancelado: o admin precisa decidir (enviar ou estornar)
+    order.payment.paidAfterCancel = true;
+    order.payment.paidAt = new Date();
+    emit('admins', 'order:paid-after-cancel', { id: order._id, total: order.total });
+  }
   await order.save();
 }
+
+const GATEWAYS = { mercadopago: () => mercadopago, asaas: () => asaas };
+
+/**
+ * Consulta o gateway (Mercado Pago/Asaas) e atualiza o pedido se o status mudou.
+ * Nunca confia em dados vindos de fora: o status é sempre lido direto da API do gateway.
+ */
+async function syncPaymentStatus(order) {
+  const p = order.payment;
+  if (!p?.pixId || p.status !== 'PENDING') return p?.status;
+  if (p.provider === 'demo') {
+    if (p.expiresAt < new Date()) await applyPixStatus(order, 'EXPIRED');
+    return order.payment.status;
+  }
+  const gateway = GATEWAYS[p.provider]?.();
+  if (!gateway) return p.status;
+  const data = await gateway.checkPix(p.pixId);
+  if (data.status !== p.status) await applyPixStatus(order, data.status);
+  return order.payment.status;
+}
+exports.syncPaymentStatus = syncPaymentStatus;
 
 // POST /api/orders/:id/pay — gera (ou reaproveita) a cobrança Pix do pedido
 // body opcional: { cpf } — o Asaas exige CPF do pagador
@@ -337,16 +364,7 @@ async function generatePix(req) {
 exports.paymentStatus = asyncHandler(async (req, res) => {
   const order = await loadOrderFor(req);
   if (!order.payment?.pixId) throw new AppError('Este pedido ainda não tem Pix gerado', 404);
-  if (order.payment.status === 'PENDING') {
-    if (order.payment.provider === 'demo') {
-      // demonstração: só expira pelo tempo; o pagamento vem do botão "Simular"
-      if (order.payment.expiresAt < new Date()) await applyPixStatus(order, 'EXPIRED');
-    } else {
-      const gateway = order.payment.provider === 'mercadopago' ? mercadopago : asaas;
-      const data = await gateway.checkPix(order.payment.pixId);
-      if (data.status !== order.payment.status) await applyPixStatus(order, data.status);
-    }
-  }
+  await syncPaymentStatus(order);
   res.json(paymentView(order));
 });
 
@@ -380,13 +398,55 @@ exports.expireStalePendingOrders = async () => {
   const hours = Number(process.env.PENDING_ORDER_TTL_HOURS || 24);
   const limit = new Date(Date.now() - hours * 3600_000);
   const stale = await Order.find({ status: 'pendente', createdAt: { $lt: limit } });
+  let canceled = 0;
   for (const order of stale) {
+    // Antes de cancelar, confere no gateway: se o cliente pagou, o pedido vira "pago"
+    try {
+      const status = await syncPaymentStatus(order);
+      if (status === 'PAID') continue;
+    } catch (err) {
+      // Sem resposta do gateway: não cancela agora, tenta de novo na próxima rodada
+      console.error(`Conferência do pedido ${order._id}:`, err.message);
+      continue;
+    }
     // update atômico: só cancela se ainda estiver pendente (evita corrida com o pagamento)
     const res = await Order.updateOne({ _id: order._id, status: 'pendente' }, { status: 'cancelado' });
     if (res.modifiedCount) {
+      canceled++;
       await restoreStock(order.items);
       emit(`user:${order.user}`, 'order:status', { id: order._id, status: 'cancelado' });
     }
   }
-  return stale.length;
+  return canceled;
+};
+
+/**
+ * Rede de segurança caso o aviso (webhook) do gateway não chegue:
+ * confere de tempos em tempos os pedidos com Pix pendente.
+ */
+exports.reconcilePendingPayments = async () => {
+  const pending = await Order.find({
+    status: 'pendente',
+    'payment.status': 'PENDING',
+    'payment.provider': { $in: Object.keys(GATEWAYS) },
+  })
+    .sort({ createdAt: -1 })
+    .limit(50);
+  let paid = 0;
+  for (const order of pending) {
+    try {
+      if ((await syncPaymentStatus(order)) === 'PAID') paid++;
+    } catch (err) {
+      console.error(`Conferência do pedido ${order._id}:`, err.message);
+    }
+  }
+  return paid;
+};
+
+/** Usado pelo webhook: encontra o pedido pela cobrança do gateway e sincroniza */
+exports.syncByPixId = async (provider, pixId) => {
+  const order = await Order.findOne({ 'payment.provider': provider, 'payment.pixId': pixId });
+  if (!order) return null;
+  await syncPaymentStatus(order);
+  return order;
 };

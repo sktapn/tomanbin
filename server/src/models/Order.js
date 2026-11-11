@@ -39,6 +39,7 @@ const orderSchema = new mongoose.Schema(
       devMode: Boolean, // true = cobrança de teste (sandbox)
       expiresAt: Date,
       paidAt: Date,
+      paidAfterCancel: Boolean, // pagou depois do cancelamento (admin deve enviar ou estornar)
     },
     // Só existe quando deliveryMethod = 'entrega'
     shippingAddress: {

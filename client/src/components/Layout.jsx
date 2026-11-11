@@ -24,14 +24,17 @@ export default function Layout() {
     const onNewOrder = (o) => toast(`🛍️ Novo pedido de ${o.customer}: ${formatPrice(o.total)}`, 'info');
     const onStatus = (o) => toast(`📦 Seu pedido agora está: ${STATUS_LABELS[o.status]}`, 'info');
     const onPaid = (o) => toast(`💸 Pagamento Pix recebido: ${formatPrice(o.total)}`, 'success');
+    const onPaidLate = (o) => toast(`⚠️ Pix de ${formatPrice(o.total)} caiu num pedido já cancelado. Veja em Pedidos.`, 'error');
     if (isAdmin) {
       socket.on('order:new', onNewOrder);
       socket.on('order:paid', onPaid);
+      socket.on('order:paid-after-cancel', onPaidLate);
     }
     if (user) socket.on('order:status', onStatus);
     return () => {
       socket.off('order:new', onNewOrder);
       socket.off('order:paid', onPaid);
+      socket.off('order:paid-after-cancel', onPaidLate);
       socket.off('order:status', onStatus);
     };
   }, [socket, user, isAdmin, toast]);

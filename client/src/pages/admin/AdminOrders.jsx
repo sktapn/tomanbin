@@ -90,6 +90,12 @@ export default function AdminOrders() {
               <ul className="order-items">
                 {o.items.map((it) => <li key={it.product}>{it.quantity}× {it.name}</li>)}
               </ul>
+              {o.payment?.paidAfterCancel && (
+                <div className="alert alert-error">
+                  Este pedido foi cancelado, mas o Pix foi pago depois. Combine o envio com o cliente ou faça o estorno no
+                  painel do gateway.
+                </div>
+              )}
               <footer className="order-foot">
                 <strong>{formatPrice(o.total)}</strong>
                 <div className="order-actions">
