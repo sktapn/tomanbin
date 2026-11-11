@@ -1,4 +1,4 @@
-# 🔒 Segurança — Quelita
+# 🔒 Segurança — Tomanbin
 
 Resumo das proteções da aplicação e de como elas são testadas (`cd server && npm test`).
 
