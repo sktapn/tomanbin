@@ -62,6 +62,18 @@ As demais variáveis são opcionais e estão explicadas no `server/.env.example`
 
 > ⚠️ O `npm run seed` apaga os produtos e pedidos existentes.
 
+## Backup do banco
+
+```bash
+cd server
+npm run backup                                    # cria server/backups/tomanbin-<data>.bak (criptografado)
+npm run restore -- backups/<arquivo>.bak          # só mostra o conteúdo
+npm run restore -- backups/<arquivo>.bak --sim-apagar-tudo   # substitui o banco pelo backup
+```
+
+O workflow **Backup do banco** (`.github/workflows/backup.yml`) faz o backup todo dia no GitHub.
+Ele usa os segredos `MONGO_URI` e `BACKUP_PASSPHRASE`.
+
 ## Estrutura
 - **`/server`**: API REST em MVC (`models`, `controllers`, `routes`, `middlewares`), autenticação JWT + bcrypt, validação Joi, Socket.io e testes Jest.
 - **`/client`**: SPA React com `react-router-dom`, axios e Context API (login, carrinho e avisos).

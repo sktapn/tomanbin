@@ -64,6 +64,16 @@ export default function Home() {
         ))}
       </section>
 
+      {/* Personalizados */}
+      <Link to="/personalizado" className="custom-cta">
+        <div>
+          <span className="hero-tag">Novo</span>
+          <h2>Faça o seu ✨</h2>
+          <p>Button P, M ou G e chaveiro com a <strong>sua</strong> imagem: foto do pet, desenho, arte do seu jeito.</p>
+        </div>
+        <span className="btn btn-yellow">Criar o meu →</span>
+      </Link>
+
       {/* Produtos em destaque */}
       <section className="featured">
         <h2 className="featured-title">Os queridinhos</h2>

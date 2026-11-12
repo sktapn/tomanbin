@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import api, { errorMessage } from '../api/axios';
+import api, { API_URL, errorMessage } from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
@@ -16,6 +16,9 @@ const DEFAULT_DESCRIPTION = {
   chaveiros: 'Chaveiro resistente com argola de metal. Leve sua fofura favorita junto com as chaves, a mochila ou o estojo.',
   'action-figures': 'Figura colecionável com acabamento caprichado. Ideal para decorar a estante, a mesa do computador ou presentear.',
 };
+
+/** Link que mostra foto, nome e preço ao ser colado no WhatsApp/Instagram */
+const shareUrl = (id) => `${import.meta.env.VITE_SHARE_URL || `${API_URL}/share/produto`}/${id}`;
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -81,6 +84,26 @@ export default function ProductDetail() {
   const maxQty = Math.max(0, product.stock - inCart);
   const categoryLabel = CATEGORY_LABELS[product.category];
 
+  // Celular: abre o menu de compartilhar do aparelho. Computador: abre o WhatsApp com o link.
+  const share = async () => {
+    const url = shareUrl(product._id);
+    const text = `${product.name} por ${formatPrice(product.price)} na Tomanbin`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: product.name, text, url });
+      } catch {
+        /* a pessoa fechou o menu */
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast('Link copiado! Cole no WhatsApp ou no Instagram', 'success');
+    } catch {
+      window.open(`https://wa.me/?text=${encodeURIComponent(`${text}: ${url}`)}`, '_blank', 'noopener');
+    }
+  };
+
   const handleAdd = (goToCart) => {
     if (qty > maxQty) {
       toast(`Você já tem ${inCart} no carrinho. Só restam ${product.stock}.`, 'error');
@@ -119,6 +142,7 @@ export default function ProductDetail() {
           </div>
 
           <h1>{product.name}</h1>
+          <button type="button" className="share-btn" onClick={share}>📤 Compartilhar</button>
 
           <div className="pdp-price">
             <span className="price big">{formatPrice(product.price)}</span>

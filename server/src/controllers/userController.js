@@ -1,7 +1,10 @@
 const User = require('../models/User');
 const Order = require('../models/Order');
+const Product = require('../models/Product');
+const coupons = require('../services/coupons');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
+const { signToken } = require('./authController');
 
 // GET /api/users  (admin)
 exports.list = asyncHandler(async (_req, res) => {
@@ -26,9 +29,13 @@ exports.updateMe = asyncHandler(async (req, res) => {
       throw new AppError('Senha atual incorreta', 400);
     }
     user.password = req.body.password; // hash no pre('save')
+    user.passwordChangedAt = new Date(); // desconecta outros aparelhos (ex: token roubado)
+    req.auditEvent = 'senha.alterada';
   }
   await user.save();
-  res.json(user);
+  // Trocou a senha: devolve um token novo para este aparelho continuar conectado
+  const token = req.body.password ? signToken(user) : undefined;
+  res.json({ ...user.toJSON(), ...(token && { token }) });
 });
 
 // PUT /api/users/:id  (admin) — altera nome/perfil
@@ -48,6 +55,13 @@ exports.remove = asyncHandler(async (req, res) => {
   }
   const user = await User.findByIdAndDelete(req.params.id);
   if (!user) throw new AppError('Usuário não encontrado', 404);
-  await Order.deleteMany({ user: user._id, status: 'pendente' });
+  // Pedidos não pagos da conta: cancela e devolve estoque e cupom (os pagos ficam no histórico da loja)
+  const pending = await Order.find({ user: user._id, status: 'pendente' });
+  for (const order of pending) {
+    const res = await Order.updateOne({ _id: order._id, status: 'pendente' }, { status: 'cancelado' });
+    if (!res.modifiedCount) continue;
+    for (const it of order.items) if (it.product) await Product.updateOne({ _id: it.product }, { $inc: { stock: it.quantity } });
+    await coupons.releaseUse(order);
+  }
   res.status(204).end();
 });

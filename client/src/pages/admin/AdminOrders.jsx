@@ -103,10 +103,23 @@ function OrderCard({ o, busy, onStatus, onTracking, onRemove }) {
 
       <table className="order-table">
         <tbody>
-          {o.items.map((it) => (
-            <tr key={it.product}>
+          {o.items.map((it, idx) => (
+            <tr key={it.product || `c${idx}`}>
               <td>{it.quantity}×</td>
-              <td>{it.name}</td>
+              <td>
+                {it.name}
+                {it.custom?.imageUrl && (
+                  <div className="custom-art">
+                    <a href={it.custom.imageUrl} target="_blank" rel="noreferrer" title="Abrir a imagem original">
+                      <img src={it.custom.imageUrl} alt="Arte do cliente" className={it.custom.optionId?.startsWith('button') ? 'round' : ''} />
+                    </a>
+                    <div>
+                      <a href={it.custom.imageUrl} target="_blank" rel="noreferrer" className="link-btn">⬇️ Baixar arte original</a>
+                      {it.custom.notes && <p className="muted">📝 {it.custom.notes}</p>}
+                    </div>
+                  </div>
+                )}
+              </td>
               <td className="num">{formatPrice(it.price * it.quantity)}</td>
             </tr>
           ))}

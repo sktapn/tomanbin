@@ -2,14 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api, { errorMessage } from '../api/axios';
 import { useAuth } from '../context/AuthContext';
-import { useCart } from '../context/CartContext';
+import { toOrderItems, useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import { Alert, Empty, Spinner } from '../components/Feedback';
 import { PLACEHOLDER_IMG, formatPrice, maskPhone } from '../utils';
 import { lookupCep, maskCep } from '../services/cep';
 
 export default function Cart() {
-  const { items, setQuantity, remove, clear, total } = useCart();
+  const { items, setQuantity, remove, clear, total, sync } = useCart();
   const { user } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
@@ -28,6 +28,19 @@ export default function Cart() {
     const n = Number(String(zip).replace(/\D/g, ''));
     return !shipping.cepRanges?.length || shipping.cepRanges.some(([a, b]) => n >= a && n <= b);
   };
+
+  // Personalizados no carrinho: mostra o prazo de produção
+  const hasCustom = items.some((i) => i.custom);
+  const [productionDays, setProductionDays] = useState(null);
+  useEffect(() => {
+    if (hasCustom) api.get('/custom').then(({ data }) => setProductionDays(data.productionDays)).catch(() => {});
+  }, [hasCustom]);
+
+  // Ao abrir o carrinho: atualiza preços e estoque com os da loja
+  const [cartNotes, setCartNotes] = useState([]);
+  useEffect(() => {
+    sync().then(setCartNotes).catch(() => {});
+  }, [sync]);
 
   // Valor do frete vem do servidor (é ele quem calcula o total de verdade)
   useEffect(() => {
@@ -49,7 +62,7 @@ export default function Cart() {
   const checkCoupon = async (code) => {
     const { data } = await api.post('/coupons/validate', {
       code,
-      items: items.map((i) => ({ product: i._id, quantity: i.quantity })),
+      items: toOrderItems(items),
       deliveryMethod: delivery,
     });
     return data;
@@ -91,9 +104,14 @@ export default function Cart() {
 
   if (items.length === 0) {
     return (
-      <Empty emoji="🛒" title="Seu carrinho está vazio">
-        <Link to="/loja" className="btn btn-primary">Ver produtos</Link>
-      </Empty>
+      <>
+        {cartNotes.length > 0 && (
+          <Alert type="info">{cartNotes.map((n) => <div key={n}>{n}</div>)}</Alert>
+        )}
+        <Empty emoji="🛒" title="Seu carrinho está vazio">
+          <Link to="/loja" className="btn btn-primary">Ver produtos</Link>
+        </Empty>
+      </>
     );
   }
 
@@ -138,7 +156,7 @@ export default function Cart() {
     setSubmitting(true);
     try {
       const { data } = await api.post('/orders', {
-        items: items.map((i) => ({ product: i._id, quantity: i.quantity })),
+        items: toOrderItems(items),
         contactPhone: phone,
         deliveryMethod: delivery,
         ...(coupon && { couponCode: coupon.code }),
@@ -149,6 +167,7 @@ export default function Cart() {
       navigate(`/pagamento/${data._id}`);
     } catch (err) {
       setError(errorMessage(err)); // ex: estoque insuficiente
+      sync().then(setCartNotes).catch(() => {}); // atualiza o carrinho com o estoque real
     } finally {
       setSubmitting(false);
     }
@@ -161,12 +180,23 @@ export default function Cart() {
           <h1>Carrinho</h1>
           <Link to="/loja" className="btn btn-ghost btn-sm">← Continuar comprando</Link>
         </div>
+        {cartNotes.length > 0 && (
+          <Alert type="info" onClose={() => setCartNotes([])}>
+            {cartNotes.map((n) => <div key={n}>{n}</div>)}
+          </Alert>
+        )}
         <ul className="cart-list">
           {items.map((i) => (
             <li key={i._id} className="card cart-item">
-              <img src={i.image || PLACEHOLDER_IMG} alt="" onError={(e) => (e.currentTarget.src = PLACEHOLDER_IMG)} />
+              <img
+                src={i.image || PLACEHOLDER_IMG}
+                alt=""
+                className={i.custom ? `custom-thumb ${i.custom.optionId.startsWith('button') ? 'round' : ''}` : ''}
+                onError={(e) => (e.currentTarget.src = PLACEHOLDER_IMG)}
+              />
               <div className="cart-item-info">
-                <Link to={`/produto/${i._id}`}><strong>{i.name}</strong></Link>
+                <Link to={i.custom ? '/personalizado' : `/produto/${i._id}`}><strong>{i.name}</strong></Link>
+                {i.custom?.notes && <span className="muted cart-notes">📝 {i.custom.notes}</span>}
                 <span className="muted">{formatPrice(i.price)} cada</span>
               </div>
               <div className="qty">
@@ -265,6 +295,9 @@ export default function Cart() {
           </>
         ) : (
           <p className="muted">Faça login para concluir o pedido.</p>
+        )}
+        {hasCustom && productionDays != null && (
+          <p className="custom-note">✨ Os personalizados levam até <strong>{productionDays} dias úteis</strong> para ficar prontos. Depois disso vem a entrega ou a retirada.</p>
         )}
         <div className="coupon-box">
           {coupon ? (

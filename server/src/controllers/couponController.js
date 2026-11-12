@@ -4,14 +4,18 @@ const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const { checkCoupon } = require('../services/coupons');
 const { shippingConfig } = require('../config/shipping');
+const customProducts = require('../services/customProducts');
 
 // POST /api/coupons/validate — prévia do desconto no carrinho (preços vêm do banco)
 exports.validate = asyncHandler(async (req, res) => {
   const { code, items, deliveryMethod } = req.body;
-  const ids = items.map((it) => it.product);
-  const products = await Product.find({ _id: { $in: ids }, active: true }).select('price');
+  const ids = items.filter((it) => it.product).map((it) => it.product);
+  const products = ids.length ? await Product.find({ _id: { $in: ids }, active: true }).select('price') : [];
   const price = Object.fromEntries(products.map((p) => [String(p._id), p.price]));
-  const subtotal = Math.round(items.reduce((s, it) => s + (price[it.product] || 0) * it.quantity, 0) * 100) / 100;
+  const cfg = items.some((it) => it.custom) ? await customProducts.getConfig() : null;
+  const unit = (it) =>
+    it.custom ? cfg.options.find((o) => o.id === it.custom.optionId && o.active)?.price || 0 : price[it.product] || 0;
+  const subtotal = Math.round(items.reduce((s, it) => s + unit(it) * it.quantity, 0) * 100) / 100;
   const shippingFee = deliveryMethod === 'entrega' ? shippingConfig().fee : 0;
 
   const { coupon, discount } = await checkCoupon(code, {

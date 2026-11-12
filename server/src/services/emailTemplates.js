@@ -70,6 +70,7 @@ exports.orderPaid = (order, user) => ({
     'Pagamento confirmado! 🎉',
     `<p>Oi, ${esc(user.name.split(' ')[0])}! O Pix do pedido <b>#${shortId(order._id)}</b> foi confirmado.
 ${order.deliveryMethod === 'retirada' ? 'Avisamos por aqui assim que estiver pronto para retirada.' : `Agora é com a gente: entregamos em ${shippingConfig().deliveryTime} e avisamos quando sair para entrega.`}</p>
+${order.items.some((i) => i.custom?.optionId) ? '<p>✨ Seus <b>personalizados</b> entram em produção agora. Se a imagem tiver algum problema para impressão, falamos com você pelo WhatsApp.</p>' : ''}
 ${itemsTable(order)}
 ${button(`${siteUrl()}/meus-pedidos`, 'Ver meus pedidos')}`
   ),

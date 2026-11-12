@@ -6,7 +6,13 @@ const STATUSES = ['pendente', 'pago', 'enviado', 'entregue', 'cancelado'];
 
 const orderItemSchema = new mongoose.Schema(
   {
-    product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+    // produto do catálogo OU item personalizado (custom)
+    product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+    custom: {
+      optionId: String, // ex: "button-m"
+      imageUrl: String, // arte enviada pelo cliente (original, para impressão)
+      notes: String, // ex: nome no chaveiro
+    },
     // nome/preço "congelados" no momento da compra
     name: { type: String, required: true },
     price: { type: Number, required: true, min: 0 },
@@ -15,6 +21,11 @@ const orderItemSchema = new mongoose.Schema(
   },
   { _id: false }
 );
+
+orderItemSchema.pre('validate', function itemKind(next) {
+  if (!this.product && !this.custom?.optionId) this.invalidate('product', 'Item sem produto');
+  next();
+});
 
 const orderSchema = new mongoose.Schema(
   {

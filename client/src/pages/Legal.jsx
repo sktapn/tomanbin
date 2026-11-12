@@ -43,7 +43,8 @@ const PAGES = {
       </>],
       ['Quais dados coletamos', <>
         Nome, e-mail e senha (guardada criptografada, nem nós conseguimos ver) ao criar a conta; telefone e endereço de
-        entrega ao finalizar um pedido; e os dados dos seus pedidos. <strong>Não guardamos dados de cartão</strong>: o
+        entrega ao finalizar um pedido; os dados dos seus pedidos; e as imagens que você envia para produtos
+        personalizados (usadas só para produzir o seu pedido). <strong>Não guardamos dados de cartão</strong>: o
         pagamento por Pix é processado pelo Mercado Pago.
       </>],
       ['Para que usamos', <>
@@ -92,6 +93,12 @@ const PAGES = {
       ['Trocas e privacidade', <>
         As regras de troca estão em <Link to="/trocas">Trocas e devoluções</Link> e o uso dos seus dados em{' '}
         <Link to="/privacidade">Política de privacidade</Link>.
+      </>],
+      ['Produtos personalizados', <>
+        No "Faça o seu", você envia a imagem e nós produzimos o button ou chaveiro. Você declara ter direito de usar a
+        imagem. Podemos recusar imagens com personagens, marcas ou conteúdo de terceiros sem autorização, ou impróprias;
+        nesse caso, devolvemos o valor pago. Por serem feitos sob encomenda, personalizados só são trocados em caso de
+        defeito. O prazo de produção aparece na página e é somado ao prazo de entrega.
       </>],
       ['Imagens e conteúdo', <>
         As fotos e textos do site pertencem à {STORE.name} e não podem ser copiados sem autorização. As cores reais

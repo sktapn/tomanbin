@@ -18,7 +18,7 @@ const initials = (name = '') =>
 const maskCpf = (cpf) => (cpf ? `***.${cpf.slice(3, 6)}.***-${cpf.slice(9, 11)}` : null);
 
 export default function Profile() {
-  const { user, setUser, logout, isAdmin } = useAuth();
+  const { user, setUser, signOut, isAdmin, saveSession } = useAuth();
   const { count } = useCart();
   const navigate = useNavigate();
 
@@ -76,9 +76,14 @@ export default function Profile() {
     if (pw.next !== pw.confirm) return setPwMsg({ type: 'error', text: 'As senhas novas não coincidem' });
     setSavingPw(true);
     try {
-      await api.put('/users/me', { password: pw.next, currentPassword: pw.current });
+      const { data } = await api.put('/users/me', { password: pw.next, currentPassword: pw.current });
+      // a troca de senha desconecta os outros aparelhos; este recebe um login novo
+      if (data.token) {
+        const { token, ...u } = data;
+        saveSession({ token, user: u });
+      }
       setPw({ current: '', next: '', confirm: '' });
-      setPwMsg({ type: 'success', text: 'Senha alterada com sucesso!' });
+      setPwMsg({ type: 'success', text: 'Senha alterada! Outros aparelhos conectados foram desconectados.' });
     } catch (err) {
       setPwMsg({ type: 'error', text: errorMessage(err) });
     } finally {
@@ -87,7 +92,7 @@ export default function Profile() {
   };
 
   const handleLogout = () => {
-    logout();
+    signOut();
     navigate('/');
   };
 

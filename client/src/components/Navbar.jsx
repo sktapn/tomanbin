@@ -4,14 +4,14 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 
 export default function Navbar() {
-  const { user, isAdmin, logout } = useAuth();
+  const { user, isAdmin, signOut } = useAuth();
   const { count } = useCart();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const close = () => setOpen(false);
 
   const handleLogout = () => {
-    logout();
+    signOut();
     close();
     navigate('/');
   };

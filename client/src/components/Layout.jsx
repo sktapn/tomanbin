@@ -1,7 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import api from '../api/axios';
 import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
+import WhatsAppButton from './WhatsAppButton';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { STATUS_LABELS, formatPrice } from '../utils';
@@ -10,6 +12,12 @@ export default function Layout() {
   const { user, isAdmin, socket } = useAuth();
   const toast = useToast();
   const { pathname } = useLocation();
+
+  // Pagamentos em modo de teste? Avisa o visitante para ninguém achar que pagou de verdade
+  const [testMode, setTestMode] = useState(false);
+  useEffect(() => {
+    api.get('/store').then(({ data }) => setTestMode(!!data.paymentTestMode)).catch(() => {});
+  }, []);
 
   // Volta ao topo ao trocar de página.
   // Obs.: as chaves {} são importantes — no Chrome novo, scrollTo devolve uma Promise e,
@@ -41,11 +49,17 @@ export default function Layout() {
 
   return (
     <div className="app">
+      {testMode && (
+        <div className="test-banner" role="status">
+          🧪 Loja em modo de teste: os pagamentos são simulados e nenhum pedido será entregue.
+        </div>
+      )}
       <Navbar />
       <main className="container main">
         <Outlet />
       </main>
       <Footer />
+      <WhatsAppButton />
     </div>
   );
 }

@@ -32,6 +32,10 @@ const products = [
 
 (async () => {
   try {
+    // O seed APAGA todos os produtos e pedidos: nunca rodar sem querer no banco da loja no ar
+    if (process.env.NODE_ENV === 'production' && !process.argv.includes('--sim-apagar-tudo')) {
+      throw new Error('Seed bloqueado em produção (apaga produtos e pedidos). Use --sim-apagar-tudo se tiver certeza.');
+    }
     await connectDB();
 
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@tomanbin.com';

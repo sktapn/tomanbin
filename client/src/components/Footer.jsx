@@ -10,6 +10,7 @@ export default function Footer() {
           <nav className="footer-col" aria-label="Loja">
             <h3>Loja</h3>
             <Link to="/loja">Produtos</Link>
+            <Link to="/personalizado">Faça o seu</Link>
             <Link to="/sobre">Sobre</Link>
             <Link to="/faq">FAQ</Link>
             <Link to="/meus-pedidos">Meus pedidos</Link>

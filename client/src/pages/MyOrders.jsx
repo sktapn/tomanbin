@@ -65,9 +65,10 @@ export default function MyOrders() {
                 <span className={`status status-${o.status}`}>{statusLabel(o)}</span>
               </header>
               <ul className="order-items">
-                {o.items.map((it) => (
-                  <li key={it.product}>
+                {o.items.map((it, idx) => (
+                  <li key={it.product || `c${idx}`}>
                     {it.quantity}× {it.name} <span className="muted">{formatPrice(it.price * it.quantity)}</span>
+                    {it.custom?.notes && <span className="muted"> · 📝 {it.custom.notes}</span>}
                   </li>
                 ))}
               </ul>

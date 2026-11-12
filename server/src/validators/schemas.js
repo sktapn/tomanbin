@@ -4,6 +4,7 @@ const { STATUSES } = require('../models/Order');
 const { ROLES } = require('../models/User');
 const { DELIVERY_METHODS } = require('../config/shipping');
 const { COUPON_TYPES } = require('../models/Coupon');
+const { OPTION_IDS } = require('../services/customProducts');
 
 const objectId = Joi.string().hex().length(24).messages({
   'string.hex': 'ID inválido',
@@ -27,7 +28,7 @@ const register = Joi.object({
 
 const login = Joi.object({
   email: Joi.string().trim().lowercase().email().required().label('E-mail'),
-  password: Joi.string().required().label('Senha'),
+  password: Joi.string().max(100).required().label('Senha'),
 }).messages(msgs);
 
 const forgotPassword = Joi.object({
@@ -68,7 +69,7 @@ const adminUpdateUser = Joi.object({
 const productBase = {
   name: Joi.string().trim().max(120).label('Nome'),
   description: Joi.string().allow('').max(2000).label('Descrição'),
-  price: Joi.number().min(0).precision(2).label('Preço'),
+  price: Joi.number().min(0.5).max(100000).precision(2).label('Preço'),
   category: Joi.string().valid(...CATEGORIES).label('Categoria'),
   images: Joi.array().items(Joi.string().uri({ scheme: ['http', 'https'] }).max(500)).max(6).label('Imagens'),
   stock: Joi.number().integer().min(0).label('Estoque'),
@@ -99,11 +100,11 @@ const listProducts = Joi.object({
 
 // ---------- Orders ----------
 const addressSchema = Joi.object({
-  street: Joi.string().trim().required().label('Rua'),
+  street: Joi.string().trim().max(120).required().label('Rua'),
   number: Joi.string().trim().max(20).required().label('Número'),
   complement: Joi.string().trim().max(80).allow('').label('Complemento'),
   neighborhood: Joi.string().trim().max(80).required().label('Bairro'),
-  city: Joi.string().trim().required().label('Cidade'),
+  city: Joi.string().trim().max(80).required().label('Cidade'),
   state: Joi.string().trim().length(2).uppercase().required().label('UF'),
   zip: Joi.string().trim().pattern(/^\d{5}-?\d{3}$/).required().label('CEP')
     .messages({ 'string.pattern.base': 'CEP inválido' }),
@@ -116,6 +117,45 @@ const phone = Joi.string()
   .pattern(/^\d{10,11}$/)
   .label('Telefone/WhatsApp')
   .messages({ 'string.pattern.base': 'Telefone inválido: informe DDD + número' });
+
+// Itens do pedido: produto do catálogo OU personalizado (preço sempre calculado no servidor)
+const quantity = Joi.number().integer().min(1).max(99).required().label('Quantidade');
+const orderItems = Joi.array()
+  .items(
+    Joi.alternatives().try(
+      Joi.object({ product: objectId.required(), quantity }),
+      Joi.object({
+        custom: Joi.object({
+          optionId: Joi.string().valid(...OPTION_IDS).required().label('Tipo do personalizado'),
+          imageUrl: Joi.string().uri({ scheme: ['http', 'https'] }).max(500).required().label('Imagem'),
+          notes: Joi.string().trim().max(120).allow('').label('Observação'),
+        }).required(),
+        quantity,
+      })
+    ).messages({ 'alternatives.match': 'Item do carrinho inválido' })
+  )
+  .min(1)
+  .max(50)
+  .required();
+
+// Configuração dos personalizados (admin)
+const customConfig = Joi.object({
+  enabled: Joi.boolean().required(),
+  productionDays: Joi.number().integer().min(0).max(60).required().label('Prazo de produção'),
+  options: Joi.array()
+    .items(
+      Joi.object({
+        id: Joi.string().valid(...OPTION_IDS).required(),
+        label: Joi.string().trim().min(2).max(40).required().label('Nome'),
+        detail: Joi.string().trim().max(40).allow('').label('Medida'),
+        price: Joi.number().min(0.5).max(10000).precision(2).required().label('Preço'),
+        active: Joi.boolean().required(),
+      })
+    )
+    .unique('id')
+    .max(OPTION_IDS.length)
+    .required(),
+}).messages(msgs);
 
 // ---------- Cupons ----------
 const couponCode = Joi.string().trim().uppercase().pattern(/^[A-Z0-9_-]{3,20}$/).label('Cupom').messages({
@@ -162,27 +202,12 @@ const couponUpdate = Joi.object({
 
 const validateCoupon = Joi.object({
   code: couponCode.required(),
-  items: Joi.array()
-    .items(Joi.object({ product: objectId.required(), quantity: Joi.number().integer().min(1).max(99).required() }))
-    .min(1)
-    .max(50)
-    .required(),
+  items: orderItems,
   deliveryMethod: Joi.string().valid(...DELIVERY_METHODS).default('entrega'),
 }).messages(msgs);
 
 const createOrder = Joi.object({
-  items: Joi.array()
-    .items(
-      Joi.object({
-        product: objectId.required(),
-        quantity: Joi.number().integer().min(1).max(99).required().label('Quantidade'),
-      })
-    )
-    .min(1)
-    .max(50)
-    .required()
-    .label('Itens')
-    .messages({ 'array.min': 'O carrinho está vazio' }),
+  items: orderItems.label('Itens').messages({ 'array.min': 'O carrinho está vazio' }),
   contactPhone: phone.required(),
   couponCode: couponCode.allow(''),
   deliveryMethod: Joi.string().valid(...DELIVERY_METHODS).default('entrega').label('Forma de entrega'),
@@ -213,6 +238,7 @@ module.exports = {
   updateProduct,
   listProducts,
   createOrder,
+  customConfig,
   forgotPassword,
   resetPassword,
   coupon,

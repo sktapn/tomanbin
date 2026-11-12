@@ -19,6 +19,20 @@ exports.receive = (req, res, next) =>
     next();
   });
 
+// Arte do cliente (personalizados): até 10 MB, para manter qualidade de impressão
+const ART_MB = 10;
+const receiveArt = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: ART_MB * 1024 * 1024, files: 1 },
+}).single('image');
+
+exports.receiveArt = (req, res, next) =>
+  receiveArt(req, res, (err) => {
+    if (err?.code === 'LIMIT_FILE_SIZE') return next(new AppError(`A imagem é maior que ${ART_MB} MB.`, 400));
+    if (err) return next(new AppError('Não foi possível ler a imagem enviada.', 400));
+    next();
+  });
+
 // POST /api/uploads/image  (admin) — devolve { url }
 exports.image = asyncHandler(async (req, res) => {
   if (!req.file) throw new AppError('Nenhuma foto enviada (campo "image").', 400);

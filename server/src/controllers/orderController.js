@@ -10,10 +10,13 @@ const mercadopago = require('../services/mercadopago');
 const { isValidCpf, onlyDigits } = require('../utils/cpf');
 const { shippingConfig, isDeliverable, cepRanges } = require('../config/shipping');
 const coupons = require('../services/coupons');
+const customProducts = require('../services/customProducts');
+const CustomArt = require('../models/CustomArt');
 const { notifyOrder } = require('../services/notifications');
 
 async function restoreStock(items) {
   for (const it of items) {
+    if (!it.product) continue; // personalizado: feito sob encomenda, não tem estoque
     const p = await Product.findByIdAndUpdate(it.product, { $inc: { stock: it.quantity } }, { new: true });
     if (p) emit(null, 'stock:update', { productId: p._id, stock: p.stock });
   }
@@ -39,9 +42,30 @@ exports.create = asyncHandler(async (req, res) => {
     throw new AppError(`Você já tem ${pending} pedidos aguardando pagamento. Pague ou cancele um deles em "Meus pedidos".`, 429);
   }
 
+  // Personalizados: preço da configuração da loja e só com imagem enviada pelo próprio cliente
+  const customLines = [];
+  const customItems = items.filter((it) => it.custom);
+  if (customItems.length) {
+    const cfg = await customProducts.getConfig();
+    if (!cfg.enabled) throw new AppError('Os personalizados estão indisponíveis no momento', 400);
+    for (const it of customItems) {
+      const opt = cfg.options.find((o) => o.id === it.custom.optionId && o.active);
+      if (!opt) throw new AppError('Uma opção de personalizado não está mais disponível', 400);
+      const owns = await CustomArt.exists({ user: req.user._id, url: it.custom.imageUrl });
+      if (!owns) throw new AppError('A imagem de um personalizado não foi encontrada. Envie a imagem de novo.', 400);
+      customLines.push({
+        name: `${opt.label} personalizado (${opt.detail})`,
+        price: opt.price,
+        image: it.custom.imageUrl,
+        quantity: it.quantity,
+        custom: { optionId: opt.id, imageUrl: it.custom.imageUrl, notes: it.custom.notes || '' },
+      });
+    }
+  }
+
   // Junta itens repetidos do mesmo produto
   const merged = new Map();
-  for (const it of items) merged.set(it.product, (merged.get(it.product) || 0) + it.quantity);
+  for (const it of items.filter((i) => i.product)) merged.set(it.product, (merged.get(it.product) || 0) + it.quantity);
 
   const reserved = [];
   try {
@@ -72,7 +96,7 @@ exports.create = asyncHandler(async (req, res) => {
   }
 
   const round = (n) => Math.round(n * 100) / 100;
-  const subtotal = round(reserved.reduce((s, it) => s + it.price * it.quantity, 0));
+  const subtotal = round([...reserved, ...customLines].reduce((s, it) => s + it.price * it.quantity, 0));
   const shippingFee = deliveryMethod === 'entrega' ? shippingConfig().fee : 0; // frete definido no servidor
 
   // Cupom: validado e calculado aqui no servidor; o uso é contado de forma atômica
@@ -86,9 +110,6 @@ exports.create = asyncHandler(async (req, res) => {
         shippingFee,
         deliveryMethod,
       }));
-      if (round(subtotal + shippingFee - discount) < 1) {
-        throw new AppError('O valor mínimo do pedido é R$ 1,00', 400);
-      }
       await coupons.reserveUse(coupon);
     } catch (err) {
       await restoreStock(reserved);
@@ -97,10 +118,16 @@ exports.create = asyncHandler(async (req, res) => {
   }
 
   const total = round(subtotal + shippingFee - discount);
+  if (total < 1) {
+    // o Pix precisa de um valor mínimo; devolve o que foi reservado
+    await restoreStock(reserved);
+    if (coupon) await coupons.releaseUse({ couponCode: coupon.code });
+    throw new AppError('O valor mínimo do pedido é R$ 1,00', 400);
+  }
   const order = await Order.create({
     ...(coupon && { couponCode: coupon.code, discount }),
     user: req.user._id,
-    items: reserved.map(({ stock, ...it }) => it),
+    items: [...reserved.map(({ stock, ...it }) => it), ...customLines],
     subtotal,
     deliveryMethod,
     contactPhone,
@@ -129,18 +156,23 @@ exports.mine = asyncHandler(async (req, res) => {
 exports.getById = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id).populate('user', 'name email');
   if (!order) throw new AppError('Pedido não encontrado', 404);
-  const isOwner = String(order.user._id) === String(req.user._id);
+  const isOwner = String(order.user?._id) === String(req.user._id); // user null = conta excluída
   if (!isOwner && req.user.role !== 'admin') throw new AppError('Acesso negado', 403);
   res.json(order);
 });
 
 // PATCH /api/orders/:id/cancel  (dono, só se pendente)
 exports.cancel = asyncHandler(async (req, res) => {
-  const order = await Order.findOne({ _id: req.params.id, user: req.user._id });
-  if (!order) throw new AppError('Pedido não encontrado', 404);
-  if (order.status !== 'pendente') throw new AppError('Só é possível cancelar pedidos pendentes', 400);
-  order.status = 'cancelado';
-  await order.save();
+  // Atômico: só cancela se AINDA estiver pendente (evita corrida com o pagamento chegando)
+  const order = await Order.findOneAndUpdate(
+    { _id: req.params.id, user: req.user._id, status: 'pendente' },
+    { status: 'cancelado' },
+    { new: true }
+  );
+  if (!order) {
+    const exists = await Order.exists({ _id: req.params.id, user: req.user._id });
+    throw new AppError(exists ? 'Só é possível cancelar pedidos pendentes' : 'Pedido não encontrado', exists ? 400 : 404);
+  }
   await restoreStock(order.items);
   await coupons.releaseUse(order);
   res.json(order);
@@ -190,10 +222,13 @@ exports.remove = asyncHandler(async (req, res) => {
 
 // GET /api/orders/stats  (admin) — dados do dashboard
 exports.stats = asyncHandler(async (_req, res) => {
-  const valid = { status: { $ne: 'cancelado' } };
-  const since = new Date();
-  since.setHours(0, 0, 0, 0);
-  since.setDate(since.getDate() - 6);
+  // Vendas = pedidos pagos (pendentes ainda não pagaram, cancelados não contam)
+  const valid = { status: { $in: ['pago', 'enviado', 'entregue'] } };
+  // Dias contados no fuso da loja (o servidor no ar roda em UTC: sem isso, vendas
+  // feitas depois das 20h em Boa Vista apareceriam no dia seguinte)
+  const TZ = process.env.STORE_TIMEZONE || 'America/Boa_Vista';
+  const dayKey = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(d); // AAAA-MM-DD
+  const since = new Date(Date.now() - 8 * 86_400_000); // folga; o filtro final é pela data no fuso
 
   const [sales, byStatus, topProducts, daily, users, products, lowStock] = await Promise.all([
     Order.aggregate([{ $match: valid }, { $group: { _id: null, total: { $sum: '$total' }, count: { $sum: 1 } } }]),
@@ -201,13 +236,13 @@ exports.stats = asyncHandler(async (_req, res) => {
     Order.aggregate([
       { $match: valid },
       { $unwind: '$items' },
-      { $group: { _id: '$items.product', name: { $first: '$items.name' }, qty: { $sum: '$items.quantity' }, revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } } } },
+      { $group: { _id: { $ifNull: ['$items.product', '$items.name'] }, name: { $first: '$items.name' }, qty: { $sum: '$items.quantity' }, revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } } } },
       { $sort: { qty: -1 } },
       { $limit: 5 },
     ]),
     Order.aggregate([
       { $match: { ...valid, createdAt: { $gte: since } } },
-      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, total: { $sum: '$total' } } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: TZ } }, total: { $sum: '$total' } } },
       { $sort: { _id: 1 } },
     ]),
     User.countDocuments(),
@@ -217,10 +252,8 @@ exports.stats = asyncHandler(async (_req, res) => {
 
   // Preenche os 7 dias (mesmo os sem vendas)
   const days = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(since);
-    d.setDate(since.getDate() + i);
-    const key = d.toISOString().slice(0, 10);
+  for (let i = 6; i >= 0; i--) {
+    const key = dayKey(new Date(Date.now() - i * 86_400_000));
     days.push({ date: key, total: daily.find((x) => x._id === key)?.total || 0 });
   }
 
@@ -241,6 +274,10 @@ exports.stats = asyncHandler(async (_req, res) => {
 /** Gateway usado: Mercado Pago ou Asaas (se houver chave); senão 'demo'. Pode forçar com PAYMENT_PROVIDER. */
 function paymentProvider() {
   const forced = process.env.PAYMENT_PROVIDER;
+  // Pix de demonstração pode ser "pago" com um clique: nunca em produção
+  if (forced === 'demo' && process.env.NODE_ENV === 'production') {
+    throw new AppError('Pagamento indisponível: o modo demonstração não pode ser usado com o site no ar', 503);
+  }
   if (['demo', 'asaas', 'mercadopago'].includes(forced)) return forced;
   if (process.env.MERCADOPAGO_ACCESS_TOKEN) return 'mercadopago';
   if (process.env.ASAAS_API_KEY) return 'asaas';
@@ -499,4 +536,17 @@ exports.syncByPixId = async (provider, pixId) => {
   if (!order) return null;
   await syncPaymentStatus(order);
   return order;
+};
+
+/** Pagamentos de teste? (Pix de demonstração ou credenciais sandbox) — o site mostra um aviso */
+exports.paymentTestMode = () => {
+  try {
+    const provider = paymentProvider();
+    if (provider === 'demo') return true;
+    if (provider === 'mercadopago') return (process.env.MERCADOPAGO_ENV || 'sandbox') !== 'production';
+    if (provider === 'asaas') return !/^\$aact_prod_/.test(process.env.ASAAS_API_KEY || '') && process.env.ASAAS_ENV !== 'production';
+  } catch {
+    return false; // sem gateway: o pagamento é recusado, não "simulado"
+  }
+  return false;
 };

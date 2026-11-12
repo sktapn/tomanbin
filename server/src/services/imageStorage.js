@@ -20,44 +20,54 @@ function detectImageType(buf) {
   return null;
 }
 
-function uploadToCloudinary(buffer) {
+function uploadToCloudinary(buffer, kind) {
   // o SDK lê a configuração da variável CLOUDINARY_URL automaticamente
   const { v2: cloudinary } = require('cloudinary');
+  const options =
+    kind === 'personalizado'
+      ? // arte do cliente: guarda o ORIGINAL, sem reduzir nem comprimir (vai para a impressão)
+        { folder: 'tomanbin/personalizados', resource_type: 'image' }
+      : {
+          folder: 'tomanbin/produtos',
+          resource_type: 'image',
+          // reduz fotos grandes de celular e converte para o melhor formato automaticamente
+          transformation: [{ width: 1200, height: 1200, crop: 'limit' }, { quality: 'auto', fetch_format: 'auto' }],
+        };
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      {
-        folder: 'tomanbin/produtos',
-        resource_type: 'image',
-        // reduz fotos grandes de celular e converte para o melhor formato automaticamente
-        transformation: [{ width: 1200, height: 1200, crop: 'limit' }, { quality: 'auto', fetch_format: 'auto' }],
-      },
+      options,
       (err, result) => (err ? reject(err) : resolve(result.secure_url))
     );
     stream.end(buffer);
   });
 }
 
-async function saveLocally(buffer, ext) {
+async function saveLocally(buffer, ext, kind) {
   await fs.mkdir(UPLOAD_DIR, { recursive: true });
-  const name = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${ext}`;
+  const prefix = kind === 'personalizado' ? 'arte-' : '';
+  const name = `${prefix}${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${ext}`;
   await fs.writeFile(path.join(UPLOAD_DIR, name), buffer);
   const base = process.env.API_PUBLIC_URL || `http://localhost:${process.env.PORT || 5001}`;
   return `${base}/static/uploads/${name}`;
 }
 
-async function storeImage(buffer) {
+async function storeImage(buffer, { kind } = {}) {
   const ext = detectImageType(buffer);
   if (!ext) throw new AppError('Formato não suportado. Envie uma foto JPG, PNG ou WEBP.', 400);
 
   if (process.env.CLOUDINARY_URL) {
     try {
-      return await uploadToCloudinary(buffer);
+      return await uploadToCloudinary(buffer, kind);
     } catch (err) {
       console.error('Cloudinary:', err.message);
       throw new AppError('Não foi possível enviar a foto para o Cloudinary. Confira CLOUDINARY_URL.', 502);
     }
   }
-  return saveLocally(buffer, ext);
+  // No Render o disco é apagado a cada deploy: salvar local faria as fotos sumirem
+  if (process.env.NODE_ENV === 'production') {
+    throw new AppError('Envio de fotos desativado: configure CLOUDINARY_URL no servidor.', 503);
+  }
+  return saveLocally(buffer, ext, kind);
 }
 
 module.exports = { storeImage, detectImageType };

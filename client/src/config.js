@@ -17,7 +17,7 @@ export const STORE = {
   document: env.VITE_STORE_DOCUMENT || 'CNPJ 00.000.000/0001-00 (fictício)',
   address: env.VITE_STORE_ADDRESS || 'Rua Exemplo, 123 – Centro, Boa Vista/RR – CEP 69301-000',
   email: env.VITE_STORE_EMAIL || 'contato@tomanbin.com.br',
-  whatsapp: env.VITE_STORE_WHATSAPP || '11900000000', // só números, com DDD
+  whatsapp: env.VITE_STORE_WHATSAPP || '95920029106', // só números, com DDD
   instagram: env.VITE_STORE_INSTAGRAM || 'tomanbin', // sem o @
   updatedAt: '11/11/2026', // data da última revisão das políticas
 };

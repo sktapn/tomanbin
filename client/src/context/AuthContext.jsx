@@ -22,6 +22,13 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
+  // Saída pelo botão "Sair": além de desconectar, esvazia o carrinho
+  // (sessão que só expirou não apaga o carrinho; ao entrar de novo ele volta)
+  const signOut = useCallback(() => {
+    logout();
+    window.dispatchEvent(new Event('tomanbin:signed-out'));
+  }, [logout]);
+
   // Ao abrir o site, confirma no backend se o token salvo ainda vale
   useEffect(() => {
     if (!token) {
@@ -73,6 +80,7 @@ export function AuthProvider({ children }) {
     login,
     register,
     logout,
+    signOut,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

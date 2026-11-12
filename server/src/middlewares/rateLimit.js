@@ -10,6 +10,8 @@ const authLimiter = rateLimit({
   limit: Number(process.env.AUTH_RATE_LIMIT || 10),
   standardHeaders: 'draft-7',
   legacyHeaders: false,
+  // só tentativas que DERAM ERRADO contam: vários logins certos na mesma rede (ex: escola) não bloqueiam ninguém
+  skipSuccessfulRequests: true,
   message: 'Muitas tentativas. Aguarde alguns minutos e tente de novo.',
   handler,
 });

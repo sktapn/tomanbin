@@ -13,6 +13,8 @@ function signToken(user) {
   });
 }
 
+exports.signToken = signToken;
+
 // POST /api/auth/register — sempre cria como "user" (role vinda do front é descartada)
 exports.register = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
@@ -24,10 +26,14 @@ exports.register = asyncHandler(async (req, res) => {
 exports.login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email }).select('+password');
+  req.auditEmail = email;
   // Mensagem genérica: não revela se o e-mail existe
   if (!user || !(await user.comparePassword(password))) {
+    req.auditEvent = 'login.falhou';
     throw new AppError('E-mail ou senha incorretos', 401);
   }
+  req.auditEvent = 'login.ok';
+  req.user = user; // para a auditoria saber quem entrou
   res.json({ token: signToken(user), user });
 });
 
@@ -42,6 +48,8 @@ const RESET_MINUTES = 60;
 // O limite de tentativas por IP (authLimiter) impede que alguém use isso para testar e-mails em massa.
 exports.forgotPassword = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email: req.body.email });
+  req.auditEvent = 'senha.pedido-de-redefinicao';
+  req.auditEmail = req.body.email;
   if (!user) throw new AppError('Não encontramos uma conta com este e-mail. Confira se digitou certo ou crie uma conta.', 404);
 
   const token = crypto.randomBytes(32).toString('hex');
@@ -68,5 +76,7 @@ exports.resetPassword = asyncHandler(async (req, res) => {
   user.resetTokenExpires = undefined;
   user.passwordChangedAt = new Date(); // desconecta sessões antigas
   await user.save();
+  req.auditEvent = 'senha.redefinida';
+  req.user = user;
   res.json({ token: signToken(user), user });
 });

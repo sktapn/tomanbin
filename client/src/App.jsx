@@ -13,6 +13,8 @@ import NotFound from './pages/NotFound';
 import About from './pages/About';
 import Faq from './pages/Faq';
 import Legal from './pages/Legal';
+import Custom from './pages/Custom';
+import AdminCustom from './pages/admin/AdminCustom';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Payment from './pages/Payment';
@@ -39,6 +41,7 @@ export default function App() {
         <Route path="redefinir-senha" element={<ResetPassword />} />
         <Route path="sobre" element={<About />} />
         <Route path="faq" element={<Faq />} />
+        <Route path="personalizado" element={<Custom />} />
         <Route path="trocas" element={<Legal page="trocas" key="trocas" />} />
         <Route path="privacidade" element={<Legal page="privacidade" key="privacidade" />} />
         <Route path="termos" element={<Legal page="termos" key="termos" />} />
@@ -60,6 +63,7 @@ export default function App() {
             <Route path="pedidos" element={<AdminOrders />} />
             <Route path="usuarios" element={<AdminUsers />} />
             <Route path="cupons" element={<AdminCoupons />} />
+            <Route path="personalizados" element={<AdminCustom />} />
           </Route>
         </Route>
 

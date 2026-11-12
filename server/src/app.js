@@ -1,9 +1,12 @@
+const mongoose = require('mongoose');
+require('./config/mongooseSetup'); // antes dos models: tempo máximo por consulta
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
 
+const { auditTrail } = require('./middlewares/audit');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const productRoutes = require('./routes/productRoutes');
@@ -11,6 +14,8 @@ const orderRoutes = require('./routes/orderRoutes');
 const webhookRoutes = require('./routes/webhookRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const couponRoutes = require('./routes/couponRoutes');
+const customRoutes = require('./routes/customRoutes');
+const shareCtrl = require('./controllers/shareController');
 const { notFound, errorHandler } = require('./middlewares/errorHandler');
 const { apiLimiter } = require('./middlewares/rateLimit');
 
@@ -37,7 +42,20 @@ if (process.env.NODE_ENV !== 'test') app.use(morgan('dev'));
 // Imagens dos produtos de exemplo
 app.use('/static', express.static(path.join(__dirname, '..', 'public'), { maxAge: '7d' }));
 
-app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
+// Verificação de saúde (usada pelo monitor que avisa se o site cair)
+app.get('/api/health', (_req, res) => {
+  const dbOk = mongoose.connection.readyState === 1;
+  res.status(dbOk ? 200 : 503).json({ status: dbOk ? 'ok' : 'erro', database: dbOk ? 'conectado' : 'desconectado' });
+});
+
+// Informações públicas da loja (o site mostra um aviso se os pagamentos forem de teste)
+app.get('/api/store', (_req, res) => {
+  const { paymentTestMode } = require('./controllers/orderController');
+  res.json({ paymentTestMode: paymentTestMode() });
+});
+
+// Trilha de auditoria (ações de admin e eventos de login/senha)
+app.use('/api', auditTrail);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -46,6 +64,10 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/coupons', couponRoutes);
+app.use('/api/custom', customRoutes);
+
+// Prévia de compartilhamento (WhatsApp/Instagram leem as tags <meta> daqui)
+app.get('/share/produto/:id', shareCtrl.product);
 
 app.use(notFound);
 app.use(errorHandler);

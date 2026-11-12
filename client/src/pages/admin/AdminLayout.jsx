@@ -8,6 +8,7 @@ export default function AdminLayout() {
         <NavLink to="/admin/produtos">🧸 Produtos</NavLink>
         <NavLink to="/admin/pedidos">📦 Pedidos</NavLink>
         <NavLink to="/admin/cupons">🏷️ Cupons</NavLink>
+        <NavLink to="/admin/personalizados">✨ Personalizados</NavLink>
         <NavLink to="/admin/usuarios">👥 Usuários</NavLink>
       </nav>
       <Outlet />

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import SocialIcons from './SocialIcons';
 import { CATEGORY_LABELS } from '../utils';
 
@@ -19,6 +20,9 @@ export default function Sidebar({ category, onChange }) {
               </button>
             </li>
           ))}
+          <li>
+            <Link to="/personalizado" className="sidebar-custom">✨ Faça o seu</Link>
+          </li>
         </ul>
       </div>
 
