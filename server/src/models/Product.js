@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const publicUrl = require('../utils/publicUrl');
 
 const CATEGORIES = ['buttons', 'chaveiros', 'action-figures'];
 const TAGS = ['', 'novo', 'edicao-limitada', 'mais-vendido'];
@@ -23,6 +24,14 @@ const productSchema = new mongoose.Schema(
 );
 
 productSchema.index({ name: 'text', description: 'text' });
+
+// Endereço público das imagens (ver utils/publicUrl.js)
+productSchema.set('toJSON', {
+  transform: (_doc, ret) => {
+    if (Array.isArray(ret.images)) ret.images = ret.images.map(publicUrl);
+    return ret;
+  },
+});
 
 module.exports = mongoose.model('Product', productSchema);
 module.exports.CATEGORIES = CATEGORIES;

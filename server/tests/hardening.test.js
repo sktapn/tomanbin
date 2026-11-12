@@ -116,3 +116,20 @@ describe('Dashboard', () => {
     expect(res.body.last7Days[6].date).toBe(today);
   });
 });
+
+describe('Imagens no site publicado', () => {
+  afterEach(() => delete process.env.API_PUBLIC_URL);
+
+  it('endereço localhost vira o endereço público da API', () => {
+    process.env.API_PUBLIC_URL = 'https://tomanbin-api.onrender.com';
+    const p = new Product({ name: 'X', price: 5, category: 'buttons', images: ['http://localhost:5001/static/products/a.svg', 'https://res.cloudinary.com/x/a.jpg'] });
+    expect(p.toJSON().images).toEqual(['https://tomanbin-api.onrender.com/static/products/a.svg', 'https://res.cloudinary.com/x/a.jpg']);
+    const o = new Order({ items: [{ name: 'X', price: 5, quantity: 1, image: 'http://localhost:5001/static/products/a.svg' }] });
+    expect(o.toJSON().items[0].image).toBe('https://tomanbin-api.onrender.com/static/products/a.svg');
+  });
+
+  it('sem API_PUBLIC_URL (no computador) continua igual', () => {
+    const p = new Product({ name: 'X', price: 5, category: 'buttons', images: ['http://localhost:5001/static/products/a.svg'] });
+    expect(p.toJSON().images[0]).toBe('http://localhost:5001/static/products/a.svg');
+  });
+});

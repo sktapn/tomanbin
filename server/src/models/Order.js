@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const publicUrl = require('../utils/publicUrl');
 
 const { DELIVERY_METHODS } = require('../config/shipping');
 
@@ -79,6 +80,14 @@ orderSchema.pre('validate', function requireAddress(next) {
     }
   }
   next();
+});
+
+// Endereço público das imagens dos itens (ver utils/publicUrl.js)
+orderSchema.set('toJSON', {
+  transform: (_doc, ret) => {
+    if (Array.isArray(ret.items)) ret.items.forEach((it) => { it.image = publicUrl(it.image); });
+    return ret;
+  },
 });
 
 module.exports = mongoose.model('Order', orderSchema);
