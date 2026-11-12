@@ -5,6 +5,7 @@ const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const email = require('../services/email');
 const tpl = require('../services/emailTemplates');
+const { siteUrl } = require('../config/site');
 
 function signToken(user) {
   return jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
@@ -57,7 +58,7 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
     { _id: user._id },
     { resetTokenHash: hashToken(token), resetTokenExpires: new Date(Date.now() + RESET_MINUTES * 60_000) }
   );
-  const site = (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/$/, '');
+  const site = siteUrl();
   const result = await email.sendEmail({ to: user.email, ...tpl.passwordReset(user, `${site}/redefinir-senha?token=${token}`) });
   if (result?.error) throw new AppError('Não conseguimos enviar o e-mail agora. Tente de novo em alguns minutos.', 502);
   res.json({ message: 'Enviamos um link para criar uma senha nova. Ele vale por 1 hora.' });

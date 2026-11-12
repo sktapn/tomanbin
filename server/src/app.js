@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 require('./config/mongooseSetup'); // antes dos models: tempo máximo por consulta
+const { clientUrls } = require('./config/site');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -31,7 +32,7 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 // (o Vite usa 5174, 5175...) e a rede local (para testar pelo celular no mesmo Wi-Fi).
 const allowOrigin = (origin, cb) => {
   const local = /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+):\d+$/;
-  const ok = !origin || origin === process.env.CLIENT_URL || (!isProd && local.test(origin));
+  const ok = !origin || clientUrls().includes(origin) || (!isProd && local.test(origin));
   cb(null, ok);
 };
 app.use(cors({ origin: allowOrigin, credentials: true }));

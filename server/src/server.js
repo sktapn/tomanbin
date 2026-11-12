@@ -16,7 +16,7 @@ const PORT = process.env.PORT || 5001;
     }
     if (process.env.NODE_ENV === 'production') {
       // Sem isso o site no ar fica quebrado (CORS, links dos e-mails) ou perde as fotos
-      if (!process.env.CLIENT_URL) throw new Error('Defina CLIENT_URL (endereço do site, ex: https://tomanbin.vercel.app)');
+      if (!process.env.CLIENT_URL) throw new Error('Defina CLIENT_URL (endereço do site; vários separados por vírgula)');
       if (!process.env.CLOUDINARY_URL) console.warn('⚠️  Sem CLOUDINARY_URL: o envio de fotos fica desativado no site no ar.');
       const { paymentTestMode } = require('./controllers/orderController');
       if (paymentTestMode()) console.warn('⚠️  Pagamentos em MODO DE TESTE: nenhum Pix é cobrado de verdade. O site mostra um aviso.');

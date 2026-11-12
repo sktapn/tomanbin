@@ -133,3 +133,18 @@ describe('Imagens no site publicado', () => {
     expect(p.toJSON().images[0]).toBe('http://localhost:5001/static/products/a.svg');
   });
 });
+
+describe('Mais de um endereço de site (CLIENT_URL)', () => {
+  const { allowOrigin } = require('../src/app');
+  const { siteUrl } = require('../src/config/site');
+  const check = (origin) => new Promise((r) => allowOrigin(origin, (_e, ok) => r(ok)));
+  afterEach(() => { delete process.env.CLIENT_URL; });
+
+  it('aceita todos os endereços listados e usa o primeiro nos links', async () => {
+    process.env.CLIENT_URL = 'https://tomanbin.shop, https://tomanbin.vercel.app/';
+    expect(await check('https://tomanbin.shop')).toBe(true);
+    expect(await check('https://tomanbin.vercel.app')).toBe(true);
+    expect(await check('https://site-falso.com')).toBe(false);
+    expect(siteUrl()).toBe('https://tomanbin.shop');
+  });
+});

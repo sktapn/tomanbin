@@ -1,7 +1,7 @@
 /** Modelos dos e-mails da loja (HTML simples, funciona em qualquer leitor de e-mail) */
 
 const STORE = () => process.env.STORE_NAME || 'Tomanbin';
-const siteUrl = () => (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/$/, '');
+const { siteUrl } = require('../config/site');
 
 // Escapa texto vindo do usuário (nome, endereço) para não virar HTML
 const esc = (s = '') =>

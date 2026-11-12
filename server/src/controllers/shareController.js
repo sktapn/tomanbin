@@ -10,7 +10,7 @@ const CATEGORY_LABELS = { buttons: 'Buttons', chaveiros: 'Chaveiros', 'action-fi
 const esc = (s = '') =>
   String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const brl = (n) => `R$ ${Number(n).toFixed(2).replace('.', ',')}`;
-const site = () => (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/$/, '');
+const { siteUrl: site } = require('../config/site');
 
 /** WhatsApp não mostra SVG: usa a foto do Cloudinary no formato 1200×630, ou a imagem padrão da loja */
 function previewImage(url) {
