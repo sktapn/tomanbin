@@ -6,6 +6,11 @@ const asyncHandler = require('../utils/asyncHandler');
 const email = require('../services/email');
 const tpl = require('../services/emailTemplates');
 const { siteUrl } = require('../config/site');
+const maintenance = require('../services/maintenance');
+
+// Loja em manutenção: só a conta de admin entra (cliente não loga, não pede nem troca senha)
+const MAINTENANCE_MSG = 'A loja está em manutenção. Voltamos já!';
+const blockedByMaintenance = async (user) => user?.role !== 'admin' && (await maintenance.getMaintenance()).enabled;
 
 function signToken(user) {
   return jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
@@ -33,6 +38,10 @@ exports.login = asyncHandler(async (req, res) => {
     req.auditEvent = 'login.falhou';
     throw new AppError('E-mail ou senha incorretos', 401);
   }
+  if (await blockedByMaintenance(user)) {
+    req.auditEvent = 'login.bloqueado-manutencao';
+    throw new AppError(MAINTENANCE_MSG, 503);
+  }
   req.auditEvent = 'login.ok';
   req.user = user; // para a auditoria saber quem entrou
   res.json({ token: signToken(user), user });
@@ -51,6 +60,7 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email: req.body.email });
   req.auditEvent = 'senha.pedido-de-redefinicao';
   req.auditEmail = req.body.email;
+  if (await blockedByMaintenance(user)) throw new AppError(MAINTENANCE_MSG, 503);
   if (!user) throw new AppError('Não encontramos uma conta com este e-mail. Confira se digitou certo ou crie uma conta.', 404);
 
   const token = crypto.randomBytes(32).toString('hex');
@@ -71,6 +81,7 @@ exports.resetPassword = asyncHandler(async (req, res) => {
     resetTokenExpires: { $gt: new Date() },
   }).select('+password');
   if (!user) throw new AppError('Link inválido ou expirado. Peça um novo.', 400);
+  if (await blockedByMaintenance(user)) throw new AppError(MAINTENANCE_MSG, 503);
 
   user.password = req.body.password; // hash no pre('save')
   user.resetTokenHash = undefined;

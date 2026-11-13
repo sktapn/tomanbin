@@ -85,10 +85,42 @@ describe('Com a manutenção ligada', () => {
     expect(res.status).toBe(400); // chegou na validação, não foi barrado pela manutenção
   });
 
-  it('o login continua funcionando (para o admin entrar)', async () => {
-    jest.spyOn(User, 'findOne').mockReturnValue({ select: async () => null });
-    const res = await request(app).post('/api/auth/login').send({ email: 'alguem@x.com', password: 'errada123' });
-    expect(res.status).toBe(401); // chegou no login de verdade
+  const conta = (role) => ({ _id: role === 'admin' ? ADMIN_ID : USER_ID, role, comparePassword: async () => true, toJSON: () => ({ role }) });
+  const login = () => request(app).post('/api/auth/login').send({ email: 'alguem@x.com', password: 'certa123' });
+
+  it('cliente não consegue entrar, mesmo com a senha certa', async () => {
+    jest.spyOn(User, 'findOne').mockReturnValue({ select: async () => conta('user') });
+    const res = await login();
+    expect(res.status).toBe(503);
+    expect(res.body).not.toHaveProperty('token');
+  });
+
+  it('o admin entra normalmente', async () => {
+    jest.spyOn(User, 'findOne').mockReturnValue({ select: async () => conta('admin') });
+    const res = await login();
+    expect(res.status).toBe(200);
+    expect(res.body.token).toBeTruthy();
+  });
+
+  it('senha errada continua dando "senha incorreta" (não revela a manutenção antes)', async () => {
+    jest.spyOn(User, 'findOne').mockReturnValue({ select: async () => ({ ...conta('user'), comparePassword: async () => false }) });
+    expect((await login()).status).toBe(401);
+  });
+
+  it('cliente não pede nova senha (nem e-mail sem conta revela nada)', async () => {
+    const upd = jest.spyOn(User, 'updateOne');
+    jest.spyOn(User, 'findOne').mockResolvedValue(null);
+    const res = await request(app).post('/api/auth/forgot-password').send({ email: 'ninguem@x.com' });
+    expect(res.status).toBe(503);
+    expect(upd).not.toHaveBeenCalled();
+  });
+
+  it('cliente não troca a senha pelo link do e-mail', async () => {
+    const save = jest.fn();
+    jest.spyOn(User, 'findOne').mockReturnValue({ select: async () => ({ ...conta('user'), save }) });
+    const res = await request(app).post('/api/auth/reset-password').send({ token: 'a'.repeat(64), password: 'NovaSenha123' });
+    expect(res.status).toBe(503);
+    expect(save).not.toHaveBeenCalled();
   });
 });
 

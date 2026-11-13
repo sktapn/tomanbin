@@ -10,7 +10,8 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { STATUS_LABELS, formatPrice } from '../utils';
 
-// Páginas que continuam abertas na manutenção (para o admin conseguir entrar)
+// Na manutenção, só estas páginas abrem (sem link para elas: o admin digita o endereço).
+// O servidor só aceita o login da conta de admin enquanto a manutenção estiver ligada.
 const OPEN_DURING_MAINTENANCE = /^\/(login|esqueci-senha|redefinir-senha)/;
 
 export default function Layout() {
@@ -19,16 +20,15 @@ export default function Layout() {
   const { pathname } = useLocation();
 
   // Pagamentos em modo de teste? Avisa o visitante para ninguém achar que pagou de verdade
-  // e se a loja está em manutenção (clientes veem a página "Voltamos já")
-  const [testMode, setTestMode] = useState(false);
-  const [maintenance, setMaintenance] = useState(null);
+  // e se a loja está em manutenção (clientes veem a página "Voltamos já").
+  // O site só aparece depois dessa resposta, para não mostrar a loja nem por um segundo.
+  const [store, setStore] = useState(null); // null = ainda perguntando
+  const testMode = !!store?.paymentTestMode;
+  const maintenance = store?.maintenance;
   useEffect(() => {
-    api.get('/store').then(({ data }) => {
-      setTestMode(!!data.paymentTestMode);
-      setMaintenance(data.maintenance || null);
-    }).catch(() => {});
+    api.get('/store').then(({ data }) => setStore(data)).catch(() => setStore({}));
     // o admin ligou/desligou no Dashboard: atualiza sem recarregar
-    const onChange = (e) => setMaintenance(e.detail.maintenance);
+    const onChange = (e) => setStore((s) => ({ ...s, maintenance: e.detail.maintenance }));
     window.addEventListener('tomanbin:store-changed', onChange);
     return () => window.removeEventListener('tomanbin:store-changed', onChange);
   }, []);
@@ -61,9 +61,16 @@ export default function Layout() {
     };
   }, [socket, user, isAdmin, toast]);
 
-  if (maintenance?.enabled && !OPEN_DURING_MAINTENANCE.test(pathname)) {
-    if (loading) return <Spinner label="Carregando..." />; // ainda conferindo se é o admin
-    if (!isAdmin) return <Maintenance message={maintenance.message} />;
+  if (!store) return <BootScreen />;
+  if (maintenance?.enabled && !isAdmin) {
+    if (loading) return <BootScreen />; // ainda conferindo se é o admin
+    if (!OPEN_DURING_MAINTENANCE.test(pathname)) return <Maintenance message={maintenance.message} />;
+    // tela de login sozinha: sem menu, rodapé nem links para a loja
+    return (
+      <main className="container main">
+        <Outlet context={{ maintenance }} />
+      </main>
+    );
   }
 
   return (
@@ -85,6 +92,16 @@ export default function Layout() {
       </main>
       <Footer />
       <WhatsAppButton />
+    </div>
+  );
+}
+
+/** Enquanto a API responde (pode levar alguns segundos se o servidor estava dormindo) */
+function BootScreen() {
+  return (
+    <div className="boot-screen">
+      <span className="logo">Tomanbin</span>
+      <Spinner label="Abrindo a loja..." />
     </div>
   );
 }

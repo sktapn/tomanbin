@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate, useOutletContext } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { errorMessage } from '../api/axios';
 import { Alert, Spinner } from '../components/Feedback';
@@ -12,6 +12,7 @@ export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const inMaintenance = !!useOutletContext()?.maintenance?.enabled; // só o admin entra
 
   if (user) return <Navigate to="/" replace />;
 
@@ -37,7 +38,9 @@ export default function Login() {
     >
       <form className="auth-form" onSubmit={handleSubmit} noValidate>
         <h1>Entrar</h1>
-        <p className="muted">Use o e-mail e a senha da sua conta Tomanbin.</p>
+        <p className="muted">
+          {inMaintenance ? 'A loja está em manutenção: só a conta de admin consegue entrar.' : 'Use o e-mail e a senha da sua conta Tomanbin.'}
+        </p>
 
         <Alert onClose={() => setError('')}>{error}</Alert>
 
@@ -67,7 +70,7 @@ export default function Login() {
           {submitting ? <Spinner small /> : 'Entrar'}
         </button>
 
-        <AuthSwitch text="Ainda não tem conta?" to="/cadastro" label="Criar conta grátis" />
+        {!inMaintenance && <AuthSwitch text="Ainda não tem conta?" to="/cadastro" label="Criar conta grátis" />}
       </form>
     </AuthLayout>
   );

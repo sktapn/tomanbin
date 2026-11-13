@@ -917,10 +917,10 @@ body:has(.checkout) .wa-float { bottom: 90px; }
 .maintenance-logo { margin-bottom: 0.2rem; }
 .maintenance-icon { font-size: 3rem; line-height: 1; }
 .maintenance-small { font-size: 0.85rem; margin-top: 0.6rem !important; }
-.maintenance-login { font-size: 0.75rem; color: var(--muted); }
 .maintenance-banner a { color: #fff; font-weight: 700; }
 .maintenance-admin { padding: 1.2rem; margin-bottom: 1.4rem; }
 .maintenance-admin.on { background: #fff4d6; }
 .maintenance-admin-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
 .maintenance-admin-head p { margin: 0 0 0.8rem; max-width: 60ch; }
 .maintenance-admin .field { margin: 0.4rem 0 0.6rem; }
+.boot-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; }

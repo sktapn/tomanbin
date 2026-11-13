@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { STORE } from '../config';
 import { whatsappLink } from '../utils';
 
@@ -28,7 +27,6 @@ export default function Maintenance({ message }) {
           </p>
         )}
       </div>
-      <Link to="/login" className="maintenance-login">Área da loja</Link>
     </main>
   );
 }
