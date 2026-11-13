@@ -5,6 +5,7 @@ const upload = require('../controllers/uploadController');
 const validate = require('../middlewares/validate');
 const { protect, authorize } = require('../middlewares/auth');
 const schemas = require('../validators/schemas');
+const duringMaintenance = require('../middlewares/maintenance');
 
 // Envio de imagens pelos clientes: até 30 por hora por pessoa
 const artLimiter = rateLimit({
@@ -17,7 +18,7 @@ const artLimiter = rateLimit({
 });
 
 router.get('/', ctrl.get);
-router.post('/art', protect, artLimiter, upload.receiveArt, ctrl.uploadArt);
+router.post('/art', protect, duringMaintenance, artLimiter, upload.receiveArt, ctrl.uploadArt);
 
 router.get('/admin', protect, authorize('admin'), ctrl.adminGet);
 router.put('/', protect, authorize('admin'), validate(schemas.customConfig), ctrl.update);

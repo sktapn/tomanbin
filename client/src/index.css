@@ -905,3 +905,22 @@ body:has(.checkout) .wa-float { bottom: 90px; }
 .custom-art img.round { border-radius: 50%; }
 .custom-art p { margin: 0.2rem 0 0; font-size: 0.8rem; }
 .custom-note { margin: 0.6rem 0; padding: 0.55rem 0.75rem; background: var(--cream); border: 2px dashed var(--wine); border-radius: var(--radius); font-size: 0.85rem; }
+
+/* ---------- Modo manutenção ---------- */
+.maintenance {
+  min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1.2rem; padding: 2rem 1.25rem; background: var(--wine-soft);
+}
+.maintenance-card { width: min(460px, 100%); padding: 2rem 1.6rem; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }
+.maintenance-card h1 { margin: 0; color: var(--wine); }
+.maintenance-card p { margin: 0 0 0.6rem; }
+.maintenance-logo { margin-bottom: 0.2rem; }
+.maintenance-icon { font-size: 3rem; line-height: 1; }
+.maintenance-small { font-size: 0.85rem; margin-top: 0.6rem !important; }
+.maintenance-login { font-size: 0.75rem; color: var(--muted); }
+.maintenance-banner a { color: #fff; font-weight: 700; }
+.maintenance-admin { padding: 1.2rem; margin-bottom: 1.4rem; }
+.maintenance-admin.on { background: #fff4d6; }
+.maintenance-admin-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
+.maintenance-admin-head p { margin: 0 0 0.8rem; max-width: 60ch; }
+.maintenance-admin .field { margin: 0.4rem 0 0.6rem; }

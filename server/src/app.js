@@ -16,6 +16,7 @@ const webhookRoutes = require('./routes/webhookRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const couponRoutes = require('./routes/couponRoutes');
 const customRoutes = require('./routes/customRoutes');
+const storeRoutes = require('./routes/storeRoutes');
 const shareCtrl = require('./controllers/shareController');
 const { notFound, errorHandler } = require('./middlewares/errorHandler');
 const { apiLimiter } = require('./middlewares/rateLimit');
@@ -49,12 +50,6 @@ app.get('/api/health', (_req, res) => {
   res.status(dbOk ? 200 : 503).json({ status: dbOk ? 'ok' : 'erro', database: dbOk ? 'conectado' : 'desconectado' });
 });
 
-// Informações públicas da loja (o site mostra um aviso se os pagamentos forem de teste)
-app.get('/api/store', (_req, res) => {
-  const { paymentTestMode } = require('./controllers/orderController');
-  res.json({ paymentTestMode: paymentTestMode() });
-});
-
 // Trilha de auditoria (ações de admin e eventos de login/senha)
 app.use('/api', auditTrail);
 
@@ -66,6 +61,8 @@ app.use('/api/webhooks', webhookRoutes);
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/custom', customRoutes);
+// Informações públicas da loja (aviso de pagamento de teste e modo manutenção)
+app.use('/api/store', storeRoutes);
 
 // Prévia de compartilhamento (WhatsApp/Instagram leem as tags <meta> daqui)
 app.get('/share/produto/:id', shareCtrl.product);

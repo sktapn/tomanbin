@@ -66,6 +66,7 @@ describe('Controle de acesso conferido rota a rota (equivalente ao RLS por tabel
     'GET /api/coupons/banner', 'POST /api/coupons/validate',
     'POST /api/webhooks/mercadopago',
     'GET /api/custom/',
+    'GET /api/store/',
   ]);
   const MOUNTS = {
     '/api/auth': require('../src/routes/authRoutes'),
@@ -76,6 +77,7 @@ describe('Controle de acesso conferido rota a rota (equivalente ao RLS por tabel
     '/api/uploads': require('../src/routes/uploadRoutes'),
     '/api/webhooks': require('../src/routes/webhookRoutes'),
     '/api/custom': require('../src/routes/customRoutes'),
+    '/api/store': require('../src/routes/storeRoutes'),
   };
 
   const routes = [];

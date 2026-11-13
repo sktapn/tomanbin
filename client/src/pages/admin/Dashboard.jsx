@@ -4,6 +4,7 @@ import api, { errorMessage } from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import { Alert, Spinner } from '../../components/Feedback';
 import { STATUS_LABELS, formatPrice } from '../../utils';
+import MaintenanceCard from './MaintenanceCard';
 
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
@@ -26,14 +27,20 @@ export default function Dashboard() {
     return () => socket.off('order:new', load);
   }, [socket, load]);
 
-  if (error) return <Alert>{error}</Alert>;
-  if (!stats) return <Spinner label="Carregando dashboard..." />;
+  return (
+    <>
+      <h1>Dashboard</h1>
+      <MaintenanceCard />
+      {error ? <Alert>{error}</Alert> : !stats ? <Spinner label="Carregando dashboard..." /> : <Stats stats={stats} />}
+    </>
+  );
+}
 
+function Stats({ stats }) {
   const max = Math.max(1, ...stats.last7Days.map((d) => d.total));
 
   return (
     <>
-      <h1>Dashboard</h1>
       <div className="stats">
         <div className="card stat"><span>💰 Total de vendas</span><strong>{formatPrice(stats.totalSales)}</strong></div>
         <div className="card stat"><span>📦 Pedidos válidos</span><strong>{stats.totalOrders}</strong></div>

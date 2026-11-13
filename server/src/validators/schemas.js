@@ -138,6 +138,12 @@ const orderItems = Joi.array()
   .max(50)
   .required();
 
+// Modo manutenção (admin)
+const maintenance = Joi.object({
+  enabled: Joi.boolean().required(),
+  message: Joi.string().trim().max(200).allow('').label('Mensagem'),
+});
+
 // Configuração dos personalizados (admin)
 const customConfig = Joi.object({
   enabled: Joi.boolean().required(),
@@ -239,6 +245,7 @@ module.exports = {
   listProducts,
   createOrder,
   customConfig,
+  maintenance,
   forgotPassword,
   resetPassword,
   coupon,
