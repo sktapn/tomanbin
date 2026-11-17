@@ -107,6 +107,10 @@ textarea.input { resize: vertical; }
   text-shadow: 2px 2px 0 var(--gold), 4px 4px 0 var(--rose);
   transform: rotate(-3deg) skewX(-6deg); letter-spacing: 0.02em; line-height: 1;
 }
+.logo:has(.logo-img) { transform: none; text-shadow: none; display: inline-flex; }
+/* Nome da loja escrito igual à logo (arquivo em client/public/logo-nome.png) */
+.logo-img { height: 52px; width: auto; display: block; }
+.logo-img-lg { height: 64px; }
 .nav-toggle { display: none; justify-self: end; font-size: 1rem; }
 
 /* ---------- Loja: sidebar + conteúdo ---------- */
@@ -232,7 +236,7 @@ textarea.input { resize: vertical; }
   -webkit-text-stroke: 1px var(--ink); text-shadow: 2px 2px 0 var(--ink); box-shadow: 3px 3px 0 var(--ink);
 }
 .hero-title {
-  margin: 0.3rem 0 0.6rem; font: 400 clamp(3.4rem, 9vw, 7rem) var(--font-display); line-height: 0.95; text-transform: none;
+  margin: 0.3rem 0 0.6rem; font: 400 clamp(2.6rem, 6vw, 4.6rem) var(--font-display); line-height: 1.02; text-transform: none;
   background: linear-gradient(180deg, #ffffff 30%, #fff1a6 65%, var(--gold) 100%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
   -webkit-text-stroke: 3px var(--ink); filter: drop-shadow(5px 5px 0 var(--ink));
@@ -240,11 +244,16 @@ textarea.input { resize: vertical; }
 .hero-text p { font-size: 1.15rem; font-weight: 700; margin: 0 0 1.3rem; max-width: 30ch; color: #fff; }
 .hero-art { position: relative; display: grid; place-items: center; }
 .burst {
-  position: absolute; width: 300px; height: 300px; background: var(--gold);
+  position: absolute; width: 380px; height: 380px; background: var(--gold);
   clip-path: polygon(50% 0, 58% 30%, 85% 12%, 70% 40%, 100% 50%, 70% 60%, 85% 88%, 58% 70%, 50% 100%, 42% 70%, 15% 88%, 30% 60%, 0 50%, 30% 40%, 15% 12%, 42% 30%);
   animation: spin 40s linear infinite;
 }
-.hero-art img { position: relative; width: 260px; transform: rotate(6deg); filter: drop-shadow(5px 5px 0 rgba(0,0,0,.2)); }
+.hero-logo {
+  position: relative; width: 250px; aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center;
+  background: #f7f0e6; border: 4px solid var(--ink); box-shadow: 6px 6px 0 rgba(0,0,0,.25), inset 0 0 0 10px #f7f0e6, inset 0 0 0 12px rgba(133,19,19,.25);
+  transform: rotate(-6deg);
+}
+.hero-logo img { width: 84%; transform: translateX(3%); }
 @media (prefers-reduced-motion: reduce) { .burst { animation: none; } }
 
 .cat-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
@@ -262,8 +271,8 @@ textarea.input { resize: vertical; }
 }
 .cat-tile p { margin: 0 0 0.7rem; font-weight: 700; font-size: 0.9rem; }
 .cat-go { display: inline-block; background: #fff; border: 2.5px solid var(--ink); border-radius: 6px; padding: 0.2rem 0.6rem; font: 700 0.75rem var(--font); text-transform: uppercase; }
-.cat-tile img { width: 110px; flex: none; transition: transform .2s; }
-.cat-tile:hover img { transform: rotate(-8deg) scale(1.08); }
+.cat-tile img { width: 150px; max-width: 45%; height: auto; flex: none; transition: transform .2s; filter: drop-shadow(0 6px 8px rgba(43, 20, 25, 0.25)); }
+.cat-tile:hover img { transform: rotate(-4deg) scale(1.06); }
 
 .featured {
   border: var(--line); border-radius: var(--radius); padding: 2.2rem 2rem 2.4rem; text-align: left;
@@ -781,7 +790,7 @@ ol.rank li::before { counter-increment: r; content: counter(r) '.'; font-family:
   .carousel { margin-inline: -0.9rem; }
   .carousel-item { width: 200px; padding-right: 0.9rem; }
   .cat-tile { min-height: 0; }
-  .cat-tile img { width: 86px; }
+  .cat-tile img { width: 120px; }
   .pcard-foot { flex-direction: column; align-items: flex-start; min-height: 0; }
   .pcard-add { opacity: 1; transform: none; }
   .shop-tools { flex-wrap: wrap; }

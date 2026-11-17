@@ -106,6 +106,17 @@ ${button(`${siteUrl()}/admin/pedidos`, 'Abrir painel de pedidos')}`
   ),
 });
 
+exports.welcome = (user) => ({
+  subject: `Boas-vindas à ${STORE()}! 🎉`,
+  html: layout(
+    `Oi, ${esc(user.name.split(' ')[0])}! Que bom ter você aqui 💖`,
+    `<p>Sua conta na <b>${esc(STORE())}</b> foi criada. Agora é só escolher seus buttons, chaveiros e action figures favoritos.</p>
+<p>✨ Também dá para criar o seu: button ou chaveiro com a imagem que você quiser, na página <b>Faça o seu</b>.</p>
+<p>Pelo site você acompanha seus pedidos, e a gente avisa por e-mail quando o pagamento for confirmado e quando o pedido estiver pronto.</p>
+${button(`${siteUrl()}/loja`, 'Ver a loja')}`
+  ),
+});
+
 exports.passwordReset = (user, link) => ({
   subject: 'Redefinir sua senha',
   html: layout(

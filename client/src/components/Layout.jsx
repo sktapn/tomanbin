@@ -100,7 +100,7 @@ export default function Layout() {
 function BootScreen() {
   return (
     <div className="boot-screen">
-      <span className="logo">Tomanbin</span>
+      <img src="/logo-nome.png" alt="Tomanbin" className="logo-img logo-img-lg" />
       <Spinner label="Abrindo a loja..." />
     </div>
   );

@@ -6,11 +6,11 @@ import { Alert, SkeletonCard } from '../components/Feedback';
 
 const img = (slug) => `${API_URL}/static/products/${slug}.svg`;
 
-// Os três tipos de produto da loja
+// Os três tipos de produto da loja (fotos em client/public/categorias)
 const CATEGORIES = [
-  { key: 'buttons', title: 'Buttons', text: 'Pra enfeitar mochila, jaqueta e bolsa.', color: 'yellow', image: img('button-gatinho-astronauta') },
-  { key: 'chaveiros', title: 'Chaveiros', text: 'Fofura que vai junto com suas chaves.', color: 'blue', image: img('chaveiro-dragaozinho') },
-  { key: 'action-figures', title: 'Action Figures', text: 'Colecionáveis pra deixar a estante feliz.', color: 'purple', image: img('figure-mago-chibi') },
+  { key: 'buttons', title: 'Buttons', text: 'Pra enfeitar mochila, jaqueta e bolsa.', color: 'yellow', image: '/categorias/buttons.webp' },
+  { key: 'chaveiros', title: 'Chaveiros', text: 'Fofura que vai junto com suas chaves.', color: 'blue', image: '/categorias/chaveiros.webp' },
+  { key: 'action-figures', title: 'Action Figures', text: 'Colecionáveis pra deixar a estante feliz.', color: 'purple', image: '/categorias/action-figures.webp' },
 ];
 
 export default function Home() {
@@ -40,13 +40,16 @@ export default function Home() {
       <section className="hero">
         <div className="hero-text">
           <span className="hero-tag">Loja</span>
-          <h1 className="hero-title">Tomanbin</h1>
+          <h1 className="hero-title">Buttons<br />com a sua cara</h1>
           <p>Buttons, chaveiros e action figures fofos pra todas as idades.</p>
           <Link to="/loja" className="btn btn-yellow btn-lg">Ver produtos</Link>
         </div>
         <div className="hero-art" aria-hidden="true">
           <span className="burst" />
-          <img src={img('chaveiro-lua-estrelas')} alt="" />
+          {/* Logo da loja num "button" (arquivo em client/public/logo-tomanbin.png) */}
+          <div className="hero-logo">
+            <img src="/logo-tomanbin.png" alt="" />
+          </div>
         </div>
       </section>
 

@@ -6,7 +6,7 @@ export default function Maintenance({ message }) {
   return (
     <main className="maintenance">
       <div className="maintenance-card card">
-        <span className="logo maintenance-logo">{STORE.name}</span>
+        <img src="/logo-nome.png" alt={STORE.name} className="logo-img logo-img-lg maintenance-logo" />
         <div className="maintenance-icon" aria-hidden="true">🛠️</div>
         <h1>Voltamos já!</h1>
         <p>{message}</p>

@@ -22,7 +22,7 @@ export default function Navbar() {
         <div className="header-left" />
 
         <Link to="/" className="logo" onClick={close} aria-label="Tomanbin — página inicial">
-          Tomanbin
+          <img src="/logo-nome.png" alt="Tomanbin" className="logo-img" />
         </Link>
 
         <button

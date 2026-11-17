@@ -11,6 +11,8 @@ async function sendEmail({ to, subject, html }) {
   if (isTest()) return { skipped: true };
   const key = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM || 'Tomanbin <onboarding@resend.dev>';
+  // Para onde vão as respostas do cliente (ex: o Gmail da loja), já que o endereço de envio não tem caixa de entrada
+  const replyTo = process.env.EMAIL_REPLY_TO;
 
   if (!key) {
     console.log(`\n📧 [e-mail de teste] Para: ${to}\n   Assunto: ${subject}\n   ${htmlToText(html).slice(0, 400)}\n`);
@@ -21,7 +23,7 @@ async function sendEmail({ to, subject, html }) {
     const res = await fetch(RESEND_URL, {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to: [to], subject, html }),
+      body: JSON.stringify({ from, to: [to], subject, html, ...(replyTo ? { reply_to: replyTo } : {}) }),
       signal: AbortSignal.timeout(10_000),
     });
     const data = await res.json().catch(() => ({}));

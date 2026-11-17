@@ -7,6 +7,7 @@ const email = require('../services/email');
 const tpl = require('../services/emailTemplates');
 const { siteUrl } = require('../config/site');
 const maintenance = require('../services/maintenance');
+const { notifyWelcome } = require('../services/notifications');
 
 // Loja em manutenção: só a conta de admin entra (cliente não loga, não pede nem troca senha)
 const MAINTENANCE_MSG = 'A loja está em manutenção. Voltamos já!';
@@ -25,6 +26,7 @@ exports.signToken = signToken;
 exports.register = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
   const user = await User.create({ name, email, password, role: 'user' });
+  notifyWelcome(user);
   res.status(201).json({ token: signToken(user), user });
 });
 
