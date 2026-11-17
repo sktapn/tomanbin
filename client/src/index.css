@@ -112,6 +112,29 @@ textarea.input { resize: vertical; }
 .logo-img { height: 52px; width: auto; display: block; }
 .logo-img-lg { height: 64px; }
 .nav-toggle { display: none; justify-self: end; font-size: 1rem; }
+.mmenu {
+  position: fixed; inset: 0; z-index: 2000; background: var(--paper, #fffaf4); display: flex; flex-direction: column;
+  animation: mmenu-in .18s ease-out;
+}
+@keyframes mmenu-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+.mmenu-top { display: grid; grid-template-columns: 90px 1fr 90px; align-items: center; justify-items: center; padding: 1rem 1.25rem; }
+.mmenu-top > :first-child { justify-self: start; }
+.mmenu-top > :last-child { justify-self: end; }
+.mmenu-close, .mmenu-back { background: none; border: 0; font-size: 1.6rem; color: var(--wine); cursor: pointer; padding: 0.2rem 0.4rem; }
+.mmenu-back { font: 700 1rem var(--font); }
+.mmenu-logo { height: 40px; width: auto; }
+.mmenu-list { display: flex; flex-direction: column; overflow-y: auto; }
+.mmenu-title { padding: 0.4rem 1.25rem 0.8rem; font: 700 0.75rem var(--font); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.mmenu-list a, .mmenu-list button {
+  display: flex; justify-content: space-between; align-items: center; width: 100%; text-align: left;
+  padding: 1.15rem 1.25rem; border: 0; border-bottom: 1px solid rgba(43, 20, 25, 0.12); background: none;
+  font: 800 1rem var(--font); text-transform: uppercase; letter-spacing: 0.02em; color: var(--wine); text-decoration: none; cursor: pointer;
+}
+.mmenu-list button span { font-size: 1.6rem; line-height: 1; }
+.mmenu-list a.active { background: var(--wine); color: #fff; }
+.mmenu-foot { margin-top: auto; border-top: 1px solid rgba(43, 20, 25, 0.12); padding: 1.1rem 1.25rem 1.4rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.mmenu-foot p { margin: 0; font-size: 1rem; color: var(--wine); }
+.mmenu-foot a, .mmenu-foot button { color: var(--wine); background: none; border: 0; font: inherit; text-decoration: none; cursor: pointer; padding: 0; }
 
 /* ---------- Loja: sidebar + conteúdo ---------- */
 .shop { display: grid; grid-template-columns: 200px 1fr; gap: 1.6rem; align-items: start; }
@@ -771,13 +794,19 @@ ol.rank li::before { counter-increment: r; content: counter(r) '.'; font-family:
   .header-inner { grid-template-columns: auto 1fr auto; }
   .header-left .hide-sm { display: none; }
   .logo { justify-self: center; font-size: 1.6rem; }
-  .nav-toggle { display: inline-flex; }
+  .nav-toggle { display: inline-flex; grid-column: 1; grid-row: 1; justify-self: start; }
+  .header-inner { grid-template-columns: 48px 1fr 48px; }
+  .header-left { display: none; }
+  .logo { grid-column: 2; grid-row: 1; }
   .header-right {
     display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--gold);
     border-bottom: var(--line); padding: 1rem 1.25rem; flex-direction: column; align-items: stretch; gap: 0.5rem;
   }
   .header-right.open { display: flex; }
   .header-right .pill { justify-content: center; font-size: 0.85rem; padding: 0.6rem; }
+  /* No celular: categorias no menu ☰ (tela cheia) em vez do bloco lateral */
+  .shop .sidebar { display: none; }
+  .header-right, .header-right.open { display: none; }
   .grid { grid-template-columns: repeat(2, 1fr); gap: 0.8rem; }
   .featured { padding: 1.6rem 0.9rem; }
   .specs { grid-template-columns: 1fr 1fr; }
@@ -838,7 +867,7 @@ ol.rank li::before { counter-increment: r; content: counter(r) '.'; font-family:
 
 /* ---------- WhatsApp flutuante ---------- */
 .wa-float {
-  position: fixed; right: 18px; bottom: 18px; z-index: 50; display: flex; align-items: center; gap: 0.5rem;
+  position: fixed; right: 18px; bottom: 18px; z-index: 40; display: flex; align-items: center; gap: 0.5rem;
   background: #25d366; color: #fff; text-decoration: none; border: var(--line); border-radius: 999px;
   padding: 0.6rem; box-shadow: 3px 3px 0 var(--ink); transition: transform .15s;
 }
